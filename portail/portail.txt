@@ -1,0 +1,223 @@
+#include "mbed.h"
+#include "DebounceIn.h"
+//#include "PinDetect.h"
+DigitalOut  IN1(D2);
+DigitalOut IN2(D3);
+PwmOut    ENA(D4);
+DigitalOut  led(LED1);
+DebounceIn   countrot(PB_8);
+//InterruptIn trig(PA_3);
+//InterruptIn countrot(PB_8);
+DebounceIn   trig(PB_9);
+AnalogIn analog_value(A0);
+InterruptIn my_button(USER_BUTTON);
+//PwmOut      my_pwm(PB_3);
+Serial pc(USBTX,USBRX);
+
+int countmaxrotation,maxrotation,maxrotationdefault;
+int oldtstate=0;
+int volatile countrotation=0;
+int new_pb,old_pb=0;
+int new_pb1,old_pb1=0;
+int stateportail=0; // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme,4 ouvert a moitie 5 ferme a moitie
+double meas, measold ,minmotor,minCC,maxCC,opendelay,closedelay;
+int minmotorpos,maxmotorpos;
+
+void anaread ()
+{
+    meas = analog_value.read(); // Converts and read the analog input value (value from 0.0 to 1.0)
+    if ((meas -measold> 0.05)|| (measold -meas> 0.05)) {
+        printf("measure = %.3f mV\n", meas);
+        printf("measure old = %.3f mV\n", measold);
+        measold = meas;
+        if ((meas<minCC)||(meas>maxCC)) {
+            if (stateportail==1) {
+                stateportail=4;
+            }
+            if (stateportail==3) {
+                stateportail=5;
+            }
+        }
+
+    }
+}
+
+void pressedcountrot (void)
+{
+    if (stateportail==3) {
+        countrotation--;
+        if (countrotation==0) {
+            pc.printf("min reached! %d \n",0);
+            stateportail=0;
+        }
+        if (countrotation==minmotorpos) {
+            pc.printf("min motor reached! %d \n",minmotorpos);
+            ENA.write(minmotor);
+        }
+    }
+    if (stateportail==1) {
+        countrotation++;
+        if (countrotation==maxrotationdefault) {
+            pc.printf("maxrotation reached! %d \n",maxrotationdefault);
+            stateportail=2;
+        }
+        if (countrotation==maxmotorpos) {
+            pc.printf("max motor reached! %d \n",maxmotorpos);
+            ENA.write(minmotor);
+        }
+    }
+    pc.printf("countrotation%d \n",countrotation);
+    wait(0.1); // 100 ms
+}
+
+
+void triggeraction (void)
+{
+    switch (stateportail) {
+        case 0: {
+            stateportail=1;
+            break;
+        }
+        case 1: {
+            stateportail=4;
+            break;
+        }
+        case 2: {
+            stateportail=3;
+            break;
+        }
+        case 3: {
+            stateportail=5;
+            break;
+        }
+        case 4: {
+            stateportail=3;
+            break;
+        }
+        case 5: {
+            stateportail=1;
+            break;
+        }
+    }
+    wait(0.5); // 500 ms
+    printf("new stateportail %d \n", stateportail);
+}
+
+
+int main()
+{
+    countrotation=0;
+    maxrotationdefault=10;
+    minmotorpos=int(0.2*maxrotationdefault);
+    maxmotorpos=int(0.8*maxrotationdefault);
+    //printf("min motor %d \n", minmotorpos);
+    //printf("maxmotor %d \n", maxmotorpos);
+    stateportail=0;
+    IN1=0;
+    IN2=0;
+    // Set PWM
+    ENA.period_ms(20);
+    minmotor=0.1;
+    ENA.write(0);
+    minCC=0.2;
+    maxCC=0.8;
+    opendelay=1.0;// 3 second
+    closedelay=0.0;
+
+    oldtstate=10;
+
+    printf("\nportail\n");
+
+
+    countmaxrotation=10;
+
+
+    while (1) {
+        //printf("%02x: \n", stateportail);
+        new_pb = countrot;
+        if ((new_pb==0) && (old_pb==1)) {
+            pc.printf("count rot pressed!\n");
+            pressedcountrot();
+        }
+        old_pb = new_pb;
+        new_pb1 = trig;
+        if ((new_pb1==0) && (old_pb1==1)) {
+            pc.printf(" action pressed!\n");
+            triggeraction();
+        }
+        old_pb1 = new_pb1;
+
+        if (oldtstate!=stateportail) {
+            switch (stateportail) {
+                case 0: {// repos ferme
+                    pc.printf(" completement ferme!\n");
+                    IN1=0;
+                    IN2=0;
+                    //maxrotation=maxrotationdefault;
+                    countrotation=0;
+                    ENA.write(0);
+                    oldtstate=stateportail;
+                    break;
+                }
+
+                case 1: { // ouvre
+                    pc.printf("ouvre!\n");
+                    wait(opendelay);
+                    IN1=1;
+                    IN2=0;
+                    ENA.write(1);
+                    oldtstate=stateportail;
+                    //printf("countrotation0 %d \n", countrotation);
+                    //printf("maxrotation0 %d \n", maxrotation);
+                    break;
+                }
+
+                case 2: { // repos ouvert
+                    pc.printf("completement ouvert!\n");
+                    IN1=0;
+                    IN2=0;
+                    //maxrotation=maxrotationdefault;
+                    countrotation=maxrotationdefault;
+                    ENA.write(0);
+                    oldtstate=stateportail;
+                    break;
+                }
+
+                case 3: { // ferme
+                    pc.printf("ferme!\n");
+                    wait(closedelay);
+                    IN1=0;
+                    IN2=1;
+                    ENA.write(1);
+                    oldtstate=stateportail;
+                    //printf("countrotation0 %d \n", countrotation);
+                    //printf("maxrotation0 %d \n", maxrotation);
+                    break;
+                }
+                case 4: { // ouvert a moitie
+                    pc.printf("ouvert a moitie %d !\n",countrotation);
+                    //maxrotation=countrotation;
+                    //countrotation=0;
+                    IN1=0;
+                    IN2=0;
+                    ENA.write(0);
+                    oldtstate=stateportail;
+                    break;
+                }
+                case 5: { // ferme a moitie
+                    pc.printf("ferme a moitie %d !\n",countrotation);
+                    //countrotation=0;
+                    IN1=0;
+                    IN2=0;
+                    ENA.write(0);
+                    oldtstate=stateportail;
+                    break;
+                }
+            }
+        }
+
+        anaread();
+
+        wait(0.1); // 500 ms
+    }
+}
