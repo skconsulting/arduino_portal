@@ -291,9 +291,12 @@ void anaread ()
         Serial.println(VoltageRef);
 
         if (calibre == 2) {
-          maxrotationclose = countrotation;
+          maxrotationclose = max(countrotation, maxrotationopen);
+          maxrotationopen = maxrotationclose;
+
           //          halfclose = int(0.5 * maxrotationclose);
           minmotorpos = int(0.9 * maxrotationclose);
+          maxmotorpos = int(0.9 * maxrotationopen);
           //minmotorpos = maxrotationclose - 1;
           stateportail = 0;
           actionportail();
@@ -426,7 +429,7 @@ void loop() {
     }
   }
   if ( inrotation ) {
-    //Serial.println("in rotation");
+   // Serial.println("in rotation");
     curROT = millis();
     if (curROT - startROT > delayCurrentDrive) {// measure after 0.5 sec
       anaread();
@@ -439,9 +442,11 @@ void loop() {
     if (curROT - startROT > rotStop * 1000) { //stop after rotstop
       inrotation = false;
       if (calibre == 2) {
-        maxrotationclose = countrotation;
+        maxrotationclose = max(countrotation, maxrotationopen);
+        maxrotationopen = maxrotationclose;
         //      halfclose = int(0.5 * maxrotationclose);
         minmotorpos = int(0.9 * maxrotationclose);
+        maxmotorpos = int(0.9 * maxrotationopen);
         //minmotorpos = maxrotationclose - 1;
         stateportail = 0;
         actionportail();
@@ -481,7 +486,7 @@ void loop() {
   if (trig.fell()) {
     Serial.println(" action pressed!");
     triggeraction();
-    delay(1000); // 1000 ms
+    //delay(1000); // 1000 ms
   }
   //delay(delayloop); // 100 ms
 }
