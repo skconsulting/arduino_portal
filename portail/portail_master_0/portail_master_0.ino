@@ -1,4 +1,4 @@
-// 13 01 2022  LAST UPDATE
+// 26 02 2022  LAST UPDATE
 #include <RH_ASK.h>
 #include "DHT.h"
 #include <SPI.h> // Not actually used but needed to compile 
@@ -82,10 +82,10 @@ void pressedcountrot (void) // each time there is a counter increase
       actionportail();
     }
     if (countrotation == minmotorpos) {
-      Serial.print("min motor reached!: ");
-      Serial.println( minmotorpos, DEC);
-      Serial.print("countrotation : ");
-      Serial.println(countrotation);
+      Serial.println("min motor reached! ");
+      //      Serial.println( minmotorpos, DEC);
+      //      Serial.print("countrotation : ");
+      //      Serial.println(countrotation);
       analogWrite(EMA, minmotor);
     }
   }
@@ -93,20 +93,20 @@ void pressedcountrot (void) // each time there is a counter increase
     countrotation++;
     if (countrotation == maxrotationopen) {
       Serial.print("maxrotation reached! completement ouvert!: ");
-      Serial.println(maxrotationopen);
+      Serial.println(countrotation);
       stateportail = 2;
       actionportail();
     }
     if (countrotation == maxmotorpos) {
-      Serial.print("max motor reached!: ");
-      Serial.println(maxmotorpos);
-      Serial.print("countrotation : ");
-      Serial.println(countrotation);
+      //      Serial.print("max motor reached!: ");
+      //      Serial.println(maxmotorpos);
+      //      Serial.print("countrotation : ");
+      //      Serial.println(countrotation);
       analogWrite(EMA, minmotor);
     }
   }
-  Serial.print("rotation count");
-  Serial.println(countrotation);
+  //  Serial.print("rotation count");
+  //  Serial.println(countrotation);
   //lcd.setCursor(6, 1); // set the cursor to column 15, line 0
   //lcd.print("o");
   //lcd.setCursor(7, 1);
@@ -129,7 +129,7 @@ void ouvreportail()
   delay(10);
   digitalWrite(IN1, 1);
   digitalWrite(IN2, 0);
-  delay(20);
+  delay(10);
   analogWrite(EMA, 255);
 }
 void fermeportail()
@@ -140,14 +140,14 @@ void fermeportail()
   delay(10);
   digitalWrite(IN1, 0);
   digitalWrite(IN2, 1);
-  delay(20);
+  delay(10);
   analogWrite(EMA, 255);
 }
 void reposportail() {
+  inrotation = false;
   analogWrite(EMA, 0);
   digitalWrite(IN1, 0);
   digitalWrite(IN2, 0);
-  inrotation = false;
 }
 
 void actionportail() {// 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
@@ -217,7 +217,6 @@ String alignT(float t, String C) {
 void triggeraction (void) { // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
   // run each time action button is pressed
   digitalWrite(LED_BUILTIN, LOW);
-
   Serial.print("old stateportail: ");
   Serial.println( stateportail);
   switch (stateportail) {
@@ -254,9 +253,9 @@ void anaread ()
   measref = analogRead(refsensor);
   VoltageRef = (measref / 1024.0) * 5000; // Gets you mV
   meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-  delay(10); // 10 ms
+  delay(5); // 5 ms
   meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-  delay(10); // 10 ms
+  delay(5); // 5 ms
   meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
   meas = (meas0 + meas1 + meas2) / 3;
   // Serial.println(meas );
@@ -265,80 +264,81 @@ void anaread ()
     //Serial.print("measure = : ");
     //Serial.println(meas * (5.0 / 1023.0));
     Voltage = (meas / 1024.0) * 5000; // Gets you mV
-    Serial.print("mV = "); // shows the voltage measured
-    Serial.println(Voltage );
-    Serial.print("Ref mV = "); // shows the voltage measured
-    Serial.println(VoltageRef );
+    //    Serial.print("mV = "); // shows the voltage measured
+    //    Serial.println(Voltage );
+    //    Serial.print("Ref mV = "); // shows the voltage measured
+    //    Serial.println(VoltageRef );
 
 
     measold = meas;
 
+    //    if (Voltage < VoltageRef) {
+    //      delay(5); // 100 ms
+    //      meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+    //      delay(5); // 10 ms
+    //      meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+    //      delay(5); // 10 ms
+    //      meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+    //      meas = (meas0 + meas1 + meas2) / 3;
+    //      Voltage = (meas / 1024.0) * 5000; // Gets you mV
+
     if (Voltage < VoltageRef) {
-      delay(10); // 100 ms
-      meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-      delay(10); // 10 ms
-      meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-      delay(10); // 10 ms
-      meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-      meas = (meas0 + meas1 + meas2) / 3;
-      Voltage = (meas / 1024.0) * 5000; // Gets you mV
+      digitalWrite(LED_BUILTIN, HIGH);
+      Serial.print("overdrive : ");
+      Serial.println(Voltage);
+      Serial.print("over VoltageRef: ");
+      Serial.println(VoltageRef);
+      Serial.print("countrotation : ");
+      Serial.println(countrotation);
+      Serial.print("calibration maxrotation: ");
+      Serial.println(maxrotationopen);
 
-      if (Voltage < VoltageRef) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        Serial.print("overdrive : ");
-        Serial.println(Voltage);
-        Serial.print("over VoltageRef: ");
-        Serial.println(VoltageRef);
-
-        if (calibre == 2) {
-          maxrotationclose = max(countrotation, maxrotationopen);
-          maxrotationopen = maxrotationclose;
-
-          //          halfclose = int(0.5 * maxrotationclose);
-          minmotorpos = int(0.9 * maxrotationclose);
-          maxmotorpos = int(0.9 * maxrotationopen);
-          //minmotorpos = maxrotationclose - 1;
-          stateportail = 0;
-          actionportail();
-          calibre = 0;
-          //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          //          lcd.print(" cal fer");
-          Serial.print("calibration maxrotationoclose: ");
-          Serial.println(maxrotationclose);
-        }
-        if (calibre == 1) {
-          maxrotationopen = countrotation;
-          //minmotorpos = int(0.1 * maxrot
-          //          halfopen = int(0.5 * maxrotationopen);
-          maxmotorpos = int(0.9 * maxrotationopen);
-          stateportail = 2;
-          actionportail();
-          calibre = 2;
-          //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          //          lcd.print(" cal ope");
-          Serial.print("calibration maxrotationopen: ");
-          Serial.println(maxrotationopen);
-        }
-        if (stateportail == 1) {
-          //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          //          lcd.print(" 1/2oove");
-          Serial.println("overdrive with a moitie ouvert!");
-          Serial.print("countrotation : ");
-          Serial.println(countrotation);
-          stateportail = 2;
-          countrotation = maxrotationclose - countrotation;
-          reposportail();
-        }
-        if (stateportail == 3) {
-          //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          //          lcd.print(" 1/2fove");
-          Serial.println("overdrive with a moitie ferme!");
-          Serial.print("countrotation : ");
-          Serial.println(countrotation);
-          stateportail = 0;
-          countrotation = maxrotationclose - countrotation;
-          reposportail();
-        }
+      if (calibre == 2) {
+        maxrotationclose = max(countrotation, maxrotationopen);
+        maxrotationopen = maxrotationclose;
+        minmotorpos = int(0.9 * maxrotationclose);
+        maxmotorpos = int(0.9 * maxrotationopen);
+        //minmotorpos = maxrotationclose - 1;
+        stateportail = 0;
+        actionportail();
+        calibre = 0;
+        //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        //          lcd.print(" cal fer");
+        Serial.print("calibration maxrotationoclose: ");
+        Serial.println(maxrotationclose);
+      }
+      if (calibre == 1) {
+        maxrotationopen = countrotation;
+        //minmotorpos = int(0.1 * maxrot
+        //          halfopen = int(0.5 * maxrotationopen);
+        maxmotorpos = int(0.9 * maxrotationopen);
+        stateportail = 2;
+        actionportail();
+        calibre = 2;
+        //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        //          lcd.print(" cal ope");
+        Serial.print("calibration maxrotationopen: ");
+        Serial.println(maxrotationopen);
+      }
+      if (stateportail == 1) {
+        //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        //          lcd.print(" 1/2oove");
+        Serial.println("overdrive with a moitie ouvert!");
+        Serial.print("countrotation : ");
+        Serial.println(countrotation);
+        stateportail = 2;
+        countrotation = maxrotationclose - countrotation;
+        reposportail();
+      }
+      if (stateportail == 3) {
+        //          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        //          lcd.print(" 1/2fove");
+        Serial.println("overdrive with a moitie ferme!");
+        Serial.print("countrotation : ");
+        Serial.println(countrotation);
+        stateportail = 0;
+        countrotation = maxrotationclose - countrotation;
+        reposportail();
       }
     }
   }
@@ -396,7 +396,7 @@ void loop() {
   trig.update();
   POC.update();
   curPOC = millis();
-  if (curPOC - startPOC > sendPOC * 1000)
+  if ((curPOC - startPOC > sendPOC * 1000) & !inrotation)
   {
     startPOC = millis();
     float humid = dht.readHumidity();
@@ -429,7 +429,7 @@ void loop() {
     }
   }
   if ( inrotation ) {
-   // Serial.println("in rotation");
+    // Serial.println("in rotation");
     curROT = millis();
     if (curROT - startROT > delayCurrentDrive) {// measure after 0.5 sec
       anaread();
@@ -442,6 +442,10 @@ void loop() {
     if (curROT - startROT > rotStop * 1000) { //stop after rotstop
       inrotation = false;
       if (calibre == 2) {
+        Serial.print("calibration maxrotationoclose: ");
+        Serial.println(maxrotationclose);
+        Serial.print("countrotation : ");
+        Serial.println(countrotation);
         maxrotationclose = max(countrotation, maxrotationopen);
         maxrotationopen = maxrotationclose;
         //      halfclose = int(0.5 * maxrotationclose);
@@ -453,10 +457,14 @@ void loop() {
         calibre = 0;
         //        lcd.setCursor(8, 0); // set the cursor to column 15, line 0
         //        lcd.print(" cal fer");
-        Serial.print("calibration maxrotationoclose: ");
+        Serial.print("New calibration maxrotation: ");
         Serial.println(maxrotationclose);
       }
       if (calibre == 1) {
+        Serial.print("calibration maxrotationopen: ");
+        Serial.println(maxrotationopen);
+        Serial.print("countrotation : ");
+        Serial.println(countrotation);
         maxrotationopen = countrotation;
         //minmotorpos = int(0.1 * maxrot
         //      halfopen = int(0.5 * maxrotationopen);
@@ -466,12 +474,15 @@ void loop() {
         calibre = 2;
         //        lcd.setCursor(8, 0); // set the cursor to column 15, line 0
         //        lcd.print(" cal ope");
-        Serial.print("calibration maxrotationopen: ");
-        Serial.println(maxrotationopen);
+  
       }
-      Serial.println("stop motor after 25s");
+      Serial.println("stop motor after 20s");
       //      lcd.setCursor(8, 0); // set the cursor to column 15, line 0
       //      lcd.print(" timeove");
+      Serial.print("countrotation : ");
+      Serial.println(countrotation);
+      Serial.print("calibration maxrotation: ");
+      Serial.println(maxrotationopen);
       if (stateportail == 1) {
         stateportail = 2;
       }
