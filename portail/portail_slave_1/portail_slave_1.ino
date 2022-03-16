@@ -7,17 +7,15 @@ RH_ASK driver;
 
 // pins
 uint8_t   countrot_pin  = PD2; // counter of rotation pull up
-uint8_t   trig_pin      = PD3; // change rotation , trigger action pull up
+uint8_t   trig_pin      = PD3; // change rotation , trigger action pull up (back up only, normally radio controlled)
 uint8_t   EMA       = PD5; // pwm motor
 uint8_t   IN1       = PD6; // command motor 1
 uint8_t   IN2       = PD7; // command motor 2
-uint8_t   POC_pin       = 8; // detection portail ouvert/ferme on pin 8 PB0
 uint8_t   sensor    = A7; // overloadsensor
-//int   refsensor    = A6; // overloadsensor reference
+int   refsensor    = A6; // overloadsensor reference
 
 Bounce countrot = Bounce();
 Bounce trig = Bounce();
-Bounce POC = Bounce();
 
 
 // var config
@@ -46,8 +44,6 @@ uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
 uint8_t buflen = sizeof(buf);
 
 const char *msg = "ouvreP";
-unsigned long startPOC;
-unsigned long curPOC;
 unsigned long startROT;
 unsigned long curROT;
 
@@ -181,8 +177,8 @@ void triggeraction (void) { // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 void anaread ()
 //stateportail = 0; // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 {
-  //  measref = analogRead(refsensor);
-  //  VoltageRef = (measref / 1024.0) * 5000; // Gets you mV
+  measref = analogRead(refsensor);
+  VoltageRef = (measref / 1024.0) * 5000; // Gets you mV
   meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
   delay(10); // 10 ms
   meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
@@ -262,8 +258,7 @@ void setup() {
   countrot.interval(10); // debounce interval in ms
   trig.attach(trig_pin, INPUT_PULLUP);
   trig.interval(10); // debounce interval in ms
-  POC.attach(POC_pin, INPUT_PULLUP);
-  POC.interval(10); // debounce interval in ms
+
 
   pinMode (EMA, OUTPUT);
   pinMode (IN1, OUTPUT);
@@ -291,7 +286,6 @@ void setup() {
   calibre = 1;
   inrotation = false;
   measold = 0;
-  startPOC = millis();  //initial start time
 }
 
 void loop() {
@@ -301,8 +295,6 @@ void loop() {
 
   countrot.update();
   trig.update();
-  POC.update();
-  curPOC = millis();
 
   if (driver.recv(buf, &buflen))
   {
