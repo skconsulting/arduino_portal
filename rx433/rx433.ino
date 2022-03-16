@@ -1,8 +1,6 @@
 /**********************************************************
   Radiohead_reception_433MHz
-
-  Affiche dans le moniteur série l'information reçue par
-  un récepteur 433 MHz.
+rx 433 with led and temperature/humidity
 */
 
 #include <RH_ASK.h> // (fait partie de Radiohead)
@@ -187,7 +185,7 @@ void loop()
       Serial.println(sub.substring(1, 6) + " %");
       lcd.setCursor(0, 1); // set the cursor to column 15, line 0
       sub.replace("+0", "+ ");
-      lcd.print("Hum : " + sub.substring(1, 6) + "%");
+      lcd.print("Humi: " + sub.substring(1, 6) + "%");
       lcdclear = true;
       startMillisS = millis();
     }
