@@ -1,10 +1,7 @@
 
-
-// 24 01 2022  LAST UPDATE
-#include <RH_ASK.h>
+// 16 03 2022  LAST UPDATE THE ONE USED AT THIS DATE
 #include <SPI.h> // Not actually used but needed to compile 
 #include <Bounce2.h>
-RH_ASK driver;
 
 // pins
 uint8_t   countrot_pin  = PD2; // counter of rotation pull up
@@ -12,13 +9,11 @@ uint8_t   trig_pin      = PD3; // change rotation , trigger action pull up
 uint8_t   EMA       = PD5; // pwm motor
 uint8_t   IN1       = PD6; // command motor 1
 uint8_t   IN2       = PD7; // command motor 2
-uint8_t   POC_pin       = 8; // detection portail ouvert/ferme on pin 8 PB0
 uint8_t   sensor    = A7; // overloadsensor
 //int   refsensor    = A6; // overloadsensor reference
 
 Bounce countrot = Bounce();
 Bounce trig = Bounce();
-Bounce POC = Bounce();
 
 //A5 SCL
 //A4 SDA
@@ -49,18 +44,9 @@ double Voltage = 5;
 int mVperAmp;
 int ACSoffset;
 
-uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
-uint8_t buflen = sizeof(buf);
-
-const char *msg = "ouvreP";
 unsigned long startPOC;
-unsigned long curPOC;
 unsigned long startROT;
 unsigned long curROT;
-
-String stringCAo = String("ouvreC");
-String stringCAf = String("fermeC");
-
 
 void pressedcountrot (void) // each time there is a counter increase
 {
@@ -282,9 +268,7 @@ void anaread ()
     }
   }
 }
-String converter(uint8_t *str) {
-  return String((char *)str);
-}
+
 void setup() {
   Serial.begin(9600);
   Serial.println("***** module slave *********");
@@ -300,16 +284,12 @@ void setup() {
   countrot.interval(10); // debounce interval in ms
   trig.attach(trig_pin, INPUT_PULLUP);
   trig.interval(10); // debounce interval in ms
-  POC.attach(POC_pin, INPUT_PULLUP);
-  POC.interval(10); // debounce interval in ms
 
   pinMode (EMA, OUTPUT);
   pinMode (IN1, OUTPUT);
   pinMode (IN2, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  if (!driver.init())
-    Serial.println("init failed");
   countrotation = 0;
   maxrotationopen = 500;
   maxrotationclose = 500;
@@ -329,7 +309,6 @@ void setup() {
   calibre = 1;
   inrotation = false;
   measold = 0;
-  startPOC = millis();  //initial start time
 }
 
 void loop() {
@@ -339,26 +318,7 @@ void loop() {
 
   countrot.update();
   trig.update();
-  POC.update();
-  curPOC = millis();
 
-  if (driver.recv(buf, &buflen))
-  {
-    String mys = converter(buf);
-    String sub = mys.substring(0, 6);
-    if (sub == stringCAo) {
-      if (stateportail == 0 || stateportail == 3) {
-        Serial.println("trigger open");
-        triggeraction();
-      }
-    }
-    else if (sub == stringCAf) {
-      if (stateportail == 2 || stateportail == 1 ) {
-        Serial.println("trigger close");
-        triggeraction();
-      }
-    }
-  }
   if ( inrotation ) {
     curROT = millis();
     if (curROT - startROT > delayCurrentDrive) {// measure after 0.5 sec
@@ -414,7 +374,5 @@ void loop() {
   if (trig.fell()) {
     Serial.println(" action pressed!");
     triggeraction();
-    //delay(1000); // 1000 ms
   }
-  //delay(delayloop); // 100 ms
 }
