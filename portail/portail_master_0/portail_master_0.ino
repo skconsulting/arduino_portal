@@ -1,4 +1,4 @@
-// 26 02 2022  LAST UPDATE
+// 16 03 2022  LAST UPDATE THE ONE USED AT THIS DATE
 #include <RH_ASK.h>
 #include "DHT.h"
 #include <SPI.h> // Not actually used but needed to compile 
@@ -268,20 +268,7 @@ void anaread ()
     //    Serial.println(Voltage );
     //    Serial.print("Ref mV = "); // shows the voltage measured
     //    Serial.println(VoltageRef );
-
-
     measold = meas;
-
-    //    if (Voltage < VoltageRef) {
-    //      delay(5); // 100 ms
-    //      meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-    //      delay(5); // 10 ms
-    //      meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-    //      delay(5); // 10 ms
-    //      meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-    //      meas = (meas0 + meas1 + meas2) / 3;
-    //      Voltage = (meas / 1024.0) * 5000; // Gets you mV
-
     if (Voltage < VoltageRef) {
       digitalWrite(LED_BUILTIN, HIGH);
       Serial.print("overdrive : ");
@@ -298,7 +285,6 @@ void anaread ()
         maxrotationopen = maxrotationclose;
         minmotorpos = int(0.9 * maxrotationclose);
         maxmotorpos = int(0.9 * maxrotationopen);
-        //minmotorpos = maxrotationclose - 1;
         stateportail = 0;
         actionportail();
         calibre = 0;
@@ -497,7 +483,5 @@ void loop() {
   if (trig.fell()) {
     Serial.println(" action pressed!");
     triggeraction();
-    //delay(1000); // 1000 ms
   }
-  //delay(delayloop); // 100 ms
 }
