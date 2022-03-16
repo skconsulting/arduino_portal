@@ -1,10 +1,5 @@
 /*
-  Example for receiving
-
-  https://github.com/sui77/rc-switch/
-
-  If you want to visualize a telegram copy the raw data and
-  paste it into http://test.sui.li/oszi/
+to analyse keys sent by 433 command
 */
 
 #include <RCSwitch.h>
