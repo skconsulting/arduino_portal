@@ -18,14 +18,14 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 char
 // var config
 int delayloop = 10; // 10ms
 double coefd = 1; // 100 for debug, normally 1
-int dg = 0
+int dg = 1
          ; // 1 for left portail, 0 for right, seen from inside court
 
 
 // var util
 int stateportail = 0; // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme,4 ouvert a moitie 5 ferme a moitie
 int maxrotationopen, maxrotationclose, calibre, inrotation;
-int halfopen, halfclose;
+int halfopen;
 int opendelay, closedelay, minmotorpos, maxmotorpos, minmotor;
 
 int countrotation = 0;
@@ -240,70 +240,68 @@ void anaread ()
 
     measold = meas;
 
+    //    if (Voltage < maxVCC) {
+    //      delay(70); // 100 ms
+    //      meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+    //      delay(120); // 10 ms
+    //      meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+    //      delay(20); // 10 ms
+    //      meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+    //      meas = (meas0 + meas1 + meas2) / 3;
+    //      Voltage = (meas / 1024.0) * 5000; // Gets you mV
+
     if (Voltage < maxVCC) {
-      delay(70); // 100 ms
-      meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-      delay(120); // 10 ms
-      meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-      delay(20); // 10 ms
-      meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-      meas = (meas0 + meas1 + meas2) / 3;
-      Voltage = (meas / 1024.0) * 5000; // Gets you mV
-
-      if (Voltage < maxVCC) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        Serial.print("overdrive : ");
-        Serial.println(maxVCC);
-        Serial.print("under maxVCC: ");
-        Serial.println(Voltage);
+      digitalWrite(LED_BUILTIN, HIGH);
+      Serial.print("overdrive : ");
+      Serial.println(maxVCC);
+      Serial.print("under maxVCC: ");
+      Serial.println(Voltage);
 
 
-        if (calibre == 2) {
-          maxrotationclose = countrotation;
-          halfclose = int(0.5 * maxrotationclose);
-          minmotorpos = int(0.9 * maxrotationclose);
-          //minmotorpos = maxrotationclose - 1;
-          stateportail = 0;
-          actionportail();
-          calibre = 0;
-          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          lcd.print(" cal fer");
-          Serial.print("calibration maxrotationoclose: ");
-          Serial.println(maxrotationclose);
-        }
-        if (calibre == 1) {
-          maxrotationopen = countrotation;
-          //minmotorpos = int(0.1 * maxrot
-          halfopen = int(0.5 * maxrotationopen);
-          maxmotorpos = int(0.9 * maxrotationopen);
-          stateportail = 2;
-          actionportail();
-          calibre = 2;
-          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          lcd.print(" cal ope");
-          Serial.print("calibration maxrotationopen: ");
-          Serial.println(maxrotationopen);
-        }
-        if (stateportail == 1) {
-          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          lcd.print(" 1/2oove");
-          Serial.println("overdrive with a moitie ouvert!");
-          Serial.print("countrotation : ");
-          Serial.println(countrotation);
-          stateportail = 4;
-          countrotation = maxrotationclose - countrotation;
-          reposportail();
-        }
-        if (stateportail == 3) {
-          lcd.setCursor(8, 0); // set the cursor to column 15, line 0
-          lcd.print(" 1/2fove");
-          Serial.println("overdrive with a moitie ferme!");
-          Serial.print("countrotation : ");
-          Serial.println(countrotation);
-          stateportail = 5;
-          countrotation = maxrotationclose - countrotation;
-          reposportail();
-        }
+      if (calibre == 2) {
+        maxrotationclose = max(countrotation, maxrotationopen);
+        maxrotationopen = maxrotationclose;
+        minmotorpos = int(0.9 * maxrotationclose);
+        maxmotorpos = int(0.9 * maxrotationopen);
+        //minmotorpos = maxrotationclose - 1;
+        stateportail = 0;
+        actionportail();
+        calibre = 0;
+        lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        lcd.print(" cal fer");
+        Serial.print("calibration maxrotationoclose: ");
+        Serial.println(maxrotationclose);
+      }
+      if (calibre == 1) {
+        maxrotationopen = countrotation;
+        maxmotorpos = int(0.9 * maxrotationopen);
+        stateportail = 2;
+        actionportail();
+        calibre = 2;
+        lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        lcd.print(" cal ope");
+        Serial.print("calibration maxrotationopen: ");
+        Serial.println(maxrotationopen);
+      }
+      if (stateportail == 1) {
+        lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        lcd.print(" 1/2oove");
+        Serial.println("overdrive with a moitie ouvert!");
+        Serial.print("countrotation : ");
+        Serial.println(countrotation);
+        stateportail = 4;
+        countrotation = maxrotationclose - countrotation;
+        reposportail();
+      }
+      if (stateportail == 3) {
+        lcd.setCursor(8, 0); // set the cursor to column 15, line 0
+        lcd.print(" 1/2fove");
+        Serial.println("overdrive with a moitie ferme!");
+        Serial.print("countrotation : ");
+        Serial.println(countrotation);
+        stateportail = 5;
+        countrotation = maxrotationclose - countrotation;
+        reposportail();
       }
     }
   }
@@ -393,9 +391,10 @@ void loop() {
     inrotation = 0;
 
     if (calibre == 2) {
-      maxrotationclose = countrotation;
-      halfclose = int(0.5 * maxrotationclose);
+      maxrotationclose = max(countrotation, maxrotationopen);
+      maxrotationopen = maxrotationclose;
       minmotorpos = int(0.9 * maxrotationclose);
+      maxmotorpos = int(0.9 * maxrotationopen);
       //minmotorpos = maxrotationclose - 1;
       stateportail = 0;
       actionportail();
