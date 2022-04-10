@@ -103,21 +103,21 @@ void setup()
   trig.attach(clk, INPUT_PULLUP);
   trig.interval(1); // debounce interval in ms
   esp8266.begin(9600);
-  //  WiFi.init(&esp8266);
-  //  // check for the presence of the shield
-  //  if (WiFi.status() == WL_NO_SHIELD) {
-  //    //Serial.println("WiFi shield not present");
-  //    // don't continue
-  //    while (true);
-  //  }
-  //  // attempt to connect to WiFi network
-  //  while ( status != WL_CONNECTED) {
-  //    Serial.println("Attempting to connect to WPA SSID ");
-  //    // Connect to WPA/WPA2 network
-  //    status = WiFi.begin(ssid, pass);
-  //  }
-  //  Serial.println("You're connected to the network");
-  //  printWifiStatus();
+  WiFi.init(&esp8266);
+  // check for the presence of the shield
+  if (WiFi.status() == WL_NO_SHIELD) {
+    //Serial.println("WiFi shield not present");
+    // don't continue
+    while (true);
+  }
+  // attempt to connect to WiFi network
+  while ( status != WL_CONNECTED) {
+    Serial.println("Attempting to connect to WPA SSID ");
+    // Connect to WPA/WPA2 network
+    status = WiFi.begin(ssid, pass);
+  }
+  Serial.println("You're connected to the network");
+  printWifiStatus();
 }
 
 void senstring(String inp) {
@@ -130,41 +130,42 @@ void httpRequest(String Pid , float command)
 {
   const char server[] = "cloud.iot-playground.com";
   const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj";   //
-  //  Serial.println(Pid);
-  //  Serial.println(command);
+//  Serial.println(Pid);
+//  Serial.println(command);
   //  close any connection before send a new request
   // this will free the socket on the WiFi shield
-  //  client.stop();
-  //  // if there's a successful connection
-  //  if (client.connect(server, 40404)) {
-  //    //Serial.println(F("Connecting..."));
-  //
-  //    // send the HTTP PUT request
-  //    client.println("POST /RestApi/v1.0/Parameter/" + Pid + "/Value/" + String(command) + " HTTP/1.1");
-  //    client.println("Host: http://cloud.iot-playground.com:40404");
-  //    client.println("Accept: application/json; indent=4");
-  //    client.println("Content-Length: " + String(content.length()));
-  //    client.println(F("Content-Type: application/json"));
-  //    client.println(content);
-  //    client.println();
-  //
-  //    lastConnectionTime = millis();
-  //    //client.stop();
-  //  }
-  //  else {
-  //    // if you couldn't make a connection
-  //    Serial.println(F("Connection failed"));
-  //  }
+    client.stop();
+    // if there's a successful connection
+    if (client.connect(server, 40404)) {
+      //Serial.println(F("Connecting..."));
+  
+      // send the HTTP PUT request
+      client.println("POST /RestApi/v1.0/Parameter/" + Pid + "/Value/" + String(command) + " HTTP/1.1");
+      client.println("Host: http://cloud.iot-playground.com:40404");
+      client.println("Accept: application/json; indent=4");
+      client.println("Content-Length: " + String(content.length()));
+      client.println(F("Content-Type: application/json"));
+      client.println(content);
+      client.println();
+  
+      lastConnectionTime = millis();
+      //client.stop();
+    }
+    else {
+      // if you couldn't make a connection
+      Serial.println(F("Connection failed"));
+    }
 }
 
 void loop()
 {
-  //  if (millis() - lastConnectionTime > postingInterval) {
-  //    if (pointStack >= 0) {
-  //      senstring(pullString());
-  //      Serial.println (pullString());
-  //    }
-  //  }
+  if (millis() - lastConnectionTime > postingInterval) {
+    if (pointStack >= 0) {
+      senstring(pullString());
+      Serial.print ("pointStack: ");
+      Serial.println (pointStack);
+    }
+  }
   //    if (!storage.isEmpty()) {
   //      senstring(storage.pop());
   //    }
@@ -188,8 +189,8 @@ void loop()
     }
     //Serial.println(res);
     if (res.length() == 8) {
-//      Serial.print("received : ");
-//      Serial.println(res);
+      //      Serial.print("received : ");
+      //      Serial.println(res);
       int dest_char = 0; // the output, 'H' -- must initialize all bits to 0
       for (int source_bit_pos = 7; source_bit_pos >= 0; source_bit_pos--) // start from rightmost position
       {
@@ -203,9 +204,9 @@ void loop()
 
       if (dest_char == 4) {
         StartPayload = false;
-        Serial.print("Final String:");
-        Serial.println(finalString);
-        //pushString(finalString);
+//        Serial.print("Final String:");
+//        Serial.println(finalString);
+        pushString(finalString);
         finalString = "";
         numreceived = -1;
       }
