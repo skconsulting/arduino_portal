@@ -1,0 +1,2 @@
+HC06: FQTBT
+pin: 1956
