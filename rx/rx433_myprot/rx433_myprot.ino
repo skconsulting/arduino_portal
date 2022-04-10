@@ -8,6 +8,7 @@
 
 boolean debug = false;
 
+
 const String Pgarage =  "Wcd5KPhDxCObUdw6";
 const String Pportail = "P5IbZrIejfJPLjH5";
 const String Ptemp =    "juuWGLJh4kgFfPOm";
@@ -120,46 +121,6 @@ void setup()
   startMillisS = millis(); //init sensor
 }
 
-//void pushString(String ins)
-//{
-//  if (pointStack < sizeStack - 1) {
-//    pointStack += 1;
-//    stack[pointStack] = ins;
-//  }
-//  else {
-//    for (int i = 0 ; i < pointStack; i ++) {
-//      stack[i] = stack[i + 1];
-//    }
-//    stack[pointStack] = ins;
-//  }
-//}
-//
-//String pullString()
-//{ String res = "";
-//  if (pointStack >= 0) {
-//    res = stack[0];
-//    for (int i = 0 ; i < pointStack; i ++) {
-//      //Serial.println(i);
-//      stack[i] = stack[i + 1];
-//    }
-//    pointStack -= 1;
-//  }
-//  else {
-//    res = "Empty";
-//  }
-//  return res;
-//}
-//
-//void dumpString()
-//{
-//  Serial.println("start dump");
-//  for (int i = 0 ; i <= pointStack; i++) {
-//    //Serial.println(i);
-//    Serial.println(stack[i]);
-//  }
-//  Serial.println("end of pile");
-//}
-
 void commande (String sub, boolean ht) {
   if (sub[0] == 'T') {
     if (debug) {
@@ -257,10 +218,11 @@ void commande (String sub, boolean ht) {
 
 void senbit( boolean b) {
   digitalWrite(data, b);
-  delay(2);
-  //delayMicroseconds()
+  //delay(1);
+  delayMicroseconds(500);
   digitalWrite(clk, LOW);
-  delay(2);
+  //delay(1);
+  delayMicroseconds(500);
   digitalWrite(clk, HIGH);
 }
 void seriew(char c, boolean w)
