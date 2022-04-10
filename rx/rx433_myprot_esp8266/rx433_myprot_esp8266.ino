@@ -5,7 +5,7 @@
 #include "WiFiEsp.h"
 #include "SoftwareSerial.h"
 //#include "SSVQueueStackArray.h"
-
+boolean debug = false;
 const int  clk = 2;    // clock
 const int data = 3;       // data
 const int pow2[] = {1, 2, 4, 8, 16, 32, 64};
@@ -25,7 +25,7 @@ const char ssid[] = "baleinou";            // your network SSID (name)
 const char pass[] = "tagada1956";        // your network password
 const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj";   //
 
-const unsigned long postingInterval = 5000; // delay between updates, in milliseconds
+const unsigned long postingInterval = 3000; // delay between updates, in milliseconds
 unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
 
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
@@ -130,31 +130,33 @@ void httpRequest(String Pid , float command)
 {
   const char server[] = "cloud.iot-playground.com";
   const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj";   //
-//  Serial.println(Pid);
-//  Serial.println(command);
+  if (debug) {
+    Serial.println(Pid);
+    Serial.println(command);
+  }
   //  close any connection before send a new request
   // this will free the socket on the WiFi shield
-    client.stop();
-    // if there's a successful connection
-    if (client.connect(server, 40404)) {
-      //Serial.println(F("Connecting..."));
-  
-      // send the HTTP PUT request
-      client.println("POST /RestApi/v1.0/Parameter/" + Pid + "/Value/" + String(command) + " HTTP/1.1");
-      client.println("Host: http://cloud.iot-playground.com:40404");
-      client.println("Accept: application/json; indent=4");
-      client.println("Content-Length: " + String(content.length()));
-      client.println(F("Content-Type: application/json"));
-      client.println(content);
-      client.println();
-  
-      lastConnectionTime = millis();
-      //client.stop();
-    }
-    else {
-      // if you couldn't make a connection
-      Serial.println(F("Connection failed"));
-    }
+  client.stop();
+  // if there's a successful connection
+  if (client.connect(server, 40404)) {
+    //Serial.println(F("Connecting..."));
+
+    // send the HTTP PUT request
+    client.println("POST /RestApi/v1.0/Parameter/" + Pid + "/Value/" + String(command) + " HTTP/1.1");
+    client.println("Host: http://cloud.iot-playground.com:40404");
+    client.println("Accept: application/json; indent=4");
+    client.println("Content-Length: " + String(content.length()));
+    client.println(F("Content-Type: application/json"));
+    client.println(content);
+    client.println();
+
+    lastConnectionTime = millis();
+    //client.stop();
+  }
+  else {
+    // if you couldn't make a connection
+    Serial.println(F("Connection failed"));
+  }
 }
 
 void loop()
@@ -204,8 +206,10 @@ void loop()
 
       if (dest_char == 4) {
         StartPayload = false;
-//        Serial.print("Final String:");
-//        Serial.println(finalString);
+        if (debug) {
+          Serial.print("Final String:");
+          Serial.println(finalString);
+        }
         pushString(finalString);
         finalString = "";
         numreceived = -1;

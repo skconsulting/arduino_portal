@@ -6,6 +6,7 @@
 #include <SPI.h>
 #include <LiquidCrystal_I2C.h>
 
+boolean debug = false;
 
 const String Pgarage =  "Wcd5KPhDxCObUdw6";
 const String Pportail = "P5IbZrIejfJPLjH5";
@@ -161,8 +162,10 @@ void setup()
 
 void commande (String sub, boolean ht) {
   if (sub[0] == 'T') {
-    Serial.print("temperature: ");
-    Serial.println(sub.substring(1, 6) + " C");
+    if (debug) {
+      Serial.print("temperature: ");
+      Serial.println(sub.substring(1, 6) + " C");
+    }
     if (ht) {
       httpRequest(Ptemp, sub.substring(1, 6));
     }
@@ -174,8 +177,10 @@ void commande (String sub, boolean ht) {
     startMillisS = millis();
   }
   else if (sub[0] == 'H') {
-    Serial.print("humidity: ");
-    Serial.println(sub.substring(1, 6) + " %");
+    if (debug) {
+      Serial.print("humidity: ");
+      Serial.println(sub.substring(1, 6) + " %");
+    }
     lcd.setCursor(0, 1); // set the cursor to column 15, line 0
     sub.replace("+0", "+ ");
     lcd.print("Humi: " + sub.substring(1, 6) + "%");
@@ -185,8 +190,10 @@ void commande (String sub, boolean ht) {
     }
     startMillisS = millis();
   }
-  else   if (sub == stringTCo) { // portail ouvert
-    Serial.println("this is Po"); // portail ouvert
+  else  if (sub == stringTCo) { // portail ouvert
+    if (debug) {
+      Serial.println("this is Po");
+    } // portail ouvert
     digitalWrite(POO, HIGH);
     digitalWrite(POF, LOW);
     digitalWrite(DEFPO, LOW);
@@ -196,7 +203,9 @@ void commande (String sub, boolean ht) {
     startMillisP = millis();
   }
   else if (sub == stringTCf) {// portail fermé
-    Serial.println("this is Pf"); // portail fermé
+    if (debug) {
+      Serial.println("this is Pf");
+    } // portail fermé
     digitalWrite(POO, LOW);
     digitalWrite(POF, HIGH);
     digitalWrite(DEFPO, LOW);
@@ -206,7 +215,9 @@ void commande (String sub, boolean ht) {
     startMillisP = millis();
   }
   else if (sub == stringGAo) { // garage ouvert
-    Serial.println("this is Go");  // garage ouvert
+    if (debug) {
+      Serial.println("this is Go");
+    }  // garage ouvert
     digitalWrite(GAO, HIGH);
     digitalWrite(GAF, LOW);
     digitalWrite(DEFGA, LOW);
@@ -216,7 +227,9 @@ void commande (String sub, boolean ht) {
     startMillisG = millis();
   }
   else if (sub == stringGAf) { // garage ferme
-    Serial.println("1 this is Gf"); // garage ferme
+    if (debug) {
+      Serial.println("1 this is Gf"); // garage ferme
+    }
     digitalWrite(GAO, LOW);
     digitalWrite(GAF, HIGH);
     digitalWrite(DEFGA, LOW);
@@ -226,7 +239,9 @@ void commande (String sub, boolean ht) {
     startMillisG = millis();
   }
   else {
-    Serial.println("this is unk");
+    if (debug) {
+      Serial.println("this is unk");
+    }
     digitalWrite(POO, LOW);
     digitalWrite(POF, LOW);
     digitalWrite(GAO, LOW);
@@ -237,7 +252,6 @@ void commande (String sub, boolean ht) {
       httpRequest(Pgarage, "2");
       httpRequest(Pportail, "2");
     }
-    Serial.println("this is unk");
   }
 }
 
@@ -278,8 +292,10 @@ void sendbeacon(String s, bool w)
 }
 void httpRequest(String Pid , String command)
 {
-//    Serial.println("Pid:" + String(Pid));
-//    Serial.println("command:" + String(command));
+  if (debug) {
+    Serial.println("Pid:" + String(Pid));
+    Serial.println("command:" + String(command));
+  }
   String tempo = Pid + "_" + command;
   //  pushString(tempo);
   //noInterrupts();
@@ -293,13 +309,13 @@ void httpRequest(String Pid , String command)
 }
 
 void loop1() {
-//  sendbeacon(startOfHeading, false);
-//  String tempo = "z";
-//  for (int i = 0; i < tempo.length(); i++)
-//  { seriew(tempo[i], false);
-//  }
-//  sendbeacon(endOfTransmission, false);
-   httpRequest(Pgarage, "1");
+  //  sendbeacon(startOfHeading, false);
+  //  String tempo = "z";
+  //  for (int i = 0; i < tempo.length(); i++)
+  //  { seriew(tempo[i], false);
+  //  }
+  //  sendbeacon(endOfTransmission, false);
+  httpRequest(Pgarage, "1");
   delay(5000);
 }
 
@@ -360,8 +376,10 @@ void loop() {
     //    Serial.println("sub :" + sub);
 
     if (sub != mysold) {
-      Serial.println("New Message recu: " + sub);
-      //      Serial.println("------");
+      if (debug) {
+        Serial.println("New Message recu: " + sub);
+        Serial.println("------");
+      }
       mysold = sub;
       commande(sub, true);
     }
