@@ -30,6 +30,9 @@ const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFff
 
 const unsigned long postingInterval = 1000; // delay between updates, in milliseconds
 unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
+unsigned long diffReceive = 1000;         // last time you connected to the server, in milliseconds
+unsigned long endReceive = 0;         // last time you connected to the server, in milliseconds
+
 
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
@@ -167,13 +170,15 @@ void httpRequest(String Pid , float command)
 
 void loop()
 {
-  if (millis() - lastConnectionTime > postingInterval) {
+  if ((millis() - lastConnectionTime > postingInterval) & (millis() - endReceive  > diffReceive)) {
     if (pointStack >= 0) {
-      dumpString();
+      if (debug) {
+        dumpString();
+      }
       senstring(pullString());
       //      if (debug) {
-      Serial.print ("pointStack: ");
-      Serial.println (pointStack);
+      //      Serial.print ("pointStack: ");
+      //      Serial.println (pointStack);
       //      }
     }
   }
@@ -206,6 +211,7 @@ void loop()
     }
     //Serial.println(res);
     if (res.length() == 8) {
+
       //      Serial.print("received : ");
       //      Serial.println(res);
       int dest_char = 0; // the output, 'H' -- must initialize all bits to 0
@@ -225,6 +231,7 @@ void loop()
           Serial.print("Final String:");
           Serial.println(finalString);
         }
+        endReceive = millis();
         pushString(finalString);
         finalString = "";
         numreceived = -1;
@@ -241,6 +248,7 @@ void loop()
         //Serial.println((char)dest_char);
       }
       if (dest_char == 1 & !StartPayload) {
+        // Serial.println((millis() - startReceive) / 1000.);
         StartPayload = true;
       }
       res = "";
