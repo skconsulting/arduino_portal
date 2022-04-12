@@ -35,7 +35,7 @@ unsigned long endReceive = 0;         // last time you connected to the server, 
 unsigned long startReceive = 0;
 
 volatile boolean receiveFlag = false;
-volatile char data[32];
+volatile char data[25] = {};
 
 
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
@@ -184,6 +184,7 @@ void httpRequest(String Pid , float command)
 void receiveEvent(int howMany)
 {
   int i = -1;
+   memset (data,' ',25);
   while ( Wire.available()) {
     i++;
     data[i] = (char)Wire.read();
@@ -195,6 +196,7 @@ void loop()
 {
   if (receiveFlag) {
     String tempo = (char*) data;
+    Serial.println(tempo);
     if (debug) {
       Serial.println(tempo);
     }
