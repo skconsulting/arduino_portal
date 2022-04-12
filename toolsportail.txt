@@ -1,0 +1,23 @@
+portail tools
+--------------
+rx433_old: rx433 without wifi working
+
+esp8266_init : init esp8266 with baudrate working
+
+rx433_myprot : rx433 with my protocol working
+
+rx433_myprot_esp8266 : rx433 with esp8266 and arduino nano working
+
+rx433_i2c : rx433 with my protocol working
+
+rx433_i2c_esp8266 : rx433 with esp8266 and arduino nano working
+
+esp8266_wifi_rx433 : esp8266 autonomous with button to command portail state  working 
+
+rx433_wifi: test to launch command to iot ground sequentially
+
+tx_433_withgarage: send data from bluetooth and garage switch
+
+rx433_cle: test protocole from tx433 external
+
+tx433: emulator send 433

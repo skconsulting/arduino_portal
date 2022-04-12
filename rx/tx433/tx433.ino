@@ -10,6 +10,7 @@ String stringTCf = String("fermeP"); //portail ferme
 String stringGAo = String("ouvreG");// garage ouvert
 String stringGAf = String("fermeG"); // garage ferme
 
+int delaybs= 5000;
 
 void sendmessage(String instr) {
   int n = instr.length();
@@ -46,39 +47,52 @@ void setup()
 {
 
   Serial.begin(115200);    // Debugging only
-  Serial.println("init send");
+  Serial.println("init send tx433");
   if (!driver.init())
     Serial.println("init failed");
 }
 
-void loop()
+void loop1()
 {
   float humid = 40.21;
   float tempera = -12.36;
   String strtemp = alignT(tempera, "T");
   sendmessage(strtemp);
-  delay(500);
+  delay(delaybs);
   strtemp = alignT(humid, "H");
   sendmessage(strtemp);
-  delay(500);
+  delay(delaybs);
   sendmessage(stringGAo);
-  delay(500);
+  delay(delaybs);
   sendmessage(stringTCo);
   Serial.println("ouvreG and ouvreP");
-  delay(500);
+  delay(delaybs);
 
   humid = 10.10;
   tempera = 25.82;
   strtemp = alignT(tempera, "T");
   sendmessage(strtemp);
-  delay(500);
+  delay(delaybs);
   strtemp = alignT(humid, "H");
   sendmessage(strtemp);
-  delay(500);
+  delay(delaybs);
   sendmessage(stringGAf);
-  delay(500);
+  delay(delaybs);
   sendmessage(stringTCf);
   Serial.println("fermeG and fermeP");
-  delay(500);
+  delay(delaybs);
+}
+void loop()
+{
+  sendmessage(stringGAo);
+  delay(delaybs);
+  sendmessage(stringTCo);
+  Serial.println("ouvreG and ouvreP");
+  delay(delaybs);
+  sendmessage(stringGAf);
+  delay(delaybs);
+  sendmessage(stringTCf);
+  Serial.println("fermeG and fermeP");
+  delay(delaybs);
 
 }

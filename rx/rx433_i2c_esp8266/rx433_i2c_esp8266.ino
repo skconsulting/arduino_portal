@@ -14,7 +14,7 @@ const int pow2[] = {1, 2, 4, 8, 16, 32, 64};
 const String startOfHeading =    "00000001";
 const String endOfTransmission = "00000100";
 
-const int sizeStack = 5; // size of stack
+const int sizeStack = 8; // size of stack
 String stack[sizeStack] ;
 int pointStack = -1;
 
@@ -28,7 +28,7 @@ const char ssid[] = "baleinou";            // your network SSID (name)
 const char pass[] = "tagada1956";        // your network password
 const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj";   //
 
-const unsigned long postingInterval = 1000; // delay between updates, in milliseconds
+const unsigned long postingInterval = 2000; // delay between updates, in milliseconds
 unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
 unsigned long diffReceive = 1000;         // last time you connected to the server, in milliseconds
 unsigned long endReceive = 0;         // last time you connected to the server, in milliseconds
@@ -43,11 +43,6 @@ int status = WL_IDLE_STATUS;     // the Wifi radio's status
 SoftwareSerial esp8266(9, 8);
 //Bounce trig = Bounce();
 WiFiEspClient client;
-
-//SSVQueueStackArray <String> storage (QUEUE_Storage, //QUEUE_Storage (FIFO) or STACK_Storage (LIFO)
-//                                     PTFSA_Overwrite,  //PTFSA_Resize, PTFSA_Overwrite, PTFSA_Ignore
-//                                     5 );           //init size;
-
 
 void pushString(String ins)
 {
@@ -88,7 +83,18 @@ void dumpString()
   }
   Serial.println("end of pile");
 }
-
+boolean lookForString(String ins)
+{
+  boolean res = false;
+  for (int i = 0 ; i <= pointStack; i++) {
+    //Serial.println(i);
+    if (ins == stack[i]) {
+      res = true;
+      break;
+    }
+  }
+  return res;
+}
 void printWifiStatus()
 {
   // print the SSID of the network you're attached to
@@ -193,9 +199,12 @@ void loop()
       Serial.println(tempo);
     }
     receiveFlag = false;
-    pushString(tempo);
+    if (!lookForString(tempo)) {
+      pushString(tempo);
+    }
     endReceive = millis();
   }
+  //Serial.println(millis() - endReceive);
   if ((millis() - lastConnectionTime > postingInterval) & (millis() - endReceive  > diffReceive)) {
     if (pointStack >= 0) {
       if (debug) {
