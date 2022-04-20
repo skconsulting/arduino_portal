@@ -30,6 +30,8 @@ const unsigned long opendelay = 1000; // 1 second afte command to open
 const unsigned long closedelay = 0; // 0 second after command to close
 const unsigned long delayCurrentDrive = 500; // delay before read motor current in ms
 const unsigned long delaybetweentrig = 1000; // delay before 2 trigger action
+const unsigned long delaybetweencount = 100; // delay before 2 rot action
+
 const uint8_t minmotor = 150; // value when approaching end of run
 
 // var util
@@ -55,6 +57,7 @@ const char *msg = "ouvreP";
 
 unsigned long humtempPOC; // delay for humidity and temperature sensor send data
 unsigned long trigROT; // delay between 2 triggers
+unsigned long trigCOUNT; // delay between rotation
 unsigned long curTime; // current time
 unsigned long startROT; // start of rotation
 //unsigned long curROT ;
@@ -379,6 +382,25 @@ void setup() {
   trigROT = millis();
 }
 
+void loop1() {
+  measref = analogRead(refsensor);
+  VoltageRef = (measref / 1024.0) * 5000; // Gets you mV
+  meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+  delay(1); // 5 ms
+  meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+  delay(1); // 5 ms
+  meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+  meas = (meas0 + meas1 + meas2) / 3;
+  Voltage = (meas / 1024.0) * 5000; // Gets you mV
+
+  Serial.print("mV = "); // shows the voltage measured
+  Serial.println(Voltage );
+  Serial.print("Ref mV = "); // shows the voltage measured
+  Serial.println(VoltageRef );
+  delay(1000);
+
+}
+
 void loop() {
   //  countrot.update();
   //  trig.update();
@@ -408,7 +430,6 @@ void loop() {
       strtemp = alignT(humid, "H");
       sendmessage(strtemp);
     }
-
     if (!POC.read()) {
       sendmessage(stringPCf);
     }
@@ -417,8 +438,9 @@ void loop() {
     }
   }
   if ( inrotation ) {
-
+    // Serial.println(curTime - startROT);
     if (curTime - startROT > delayCurrentDrive) {// measure after 0.5 sec
+      //Serial.println("start measure");
       anaread();
     }
     if (curTime - startROT > rotStop ) { //stop after rotstop
@@ -475,22 +497,25 @@ void loop() {
 
   // change mode by pressing remote controller
   if (triggerFlag) {
-    if (debug) {
-      Serial.println(" action pressed!");
-    }
-    if (curTime - trigROT > delaybetweentrig ) {
-      triggeraction();
-      trigROT = millis();
-    }
     triggerFlag = false;
+    if (curTime - trigROT > delaybetweentrig ) {
+      trigROT = millis();
+      triggeraction();
+      if (debug) {
+        Serial.println(" action pressed!");
+      }
+    }
   }
   if ( counterFlag) {
-    if (debug) {
-      Serial.println(" counter pressed!");
-    }
-    if ( inrotation ) {
-      pressedcountrot();
-    }
     counterFlag = false;
+    if (curTime - trigCOUNT > delaybetweencount ) {
+      trigCOUNT = millis();
+      if ( inrotation ) {
+        pressedcountrot();
+        if (debug) {
+          Serial.println(" counter pressed!");
+        }
+      }
+    }
   }
 }

@@ -1,8 +1,8 @@
 
 // 16 03 2022  LAST UPDATE THE ONE USED AT THIS DATE
-#include <SPI.h> // Not actually used but needed to compile 
+//#include <SPI.h> // Not actually used but needed to compile 
 #include <Bounce2.h>
-
+const boolean debug = true;
 // pins
 uint8_t   countrot_pin  = PD2; // counter of rotation pull up
 uint8_t   trig_pin      = PD3; // change rotation , trigger action pull up
@@ -33,7 +33,7 @@ const int minmotor = 150; // value when approaching end of run
 // var util
 int stateportail = 0; // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 int maxrotationopen, maxrotationclose, calibre ;
-double VoltageRef = 2.0; // ref Voltage from potentiometre
+double VoltageRef = 3.0; // ref Voltage from potentiometre
 
 int minmotorpos, maxmotorpos;
 bool inrotation;
@@ -270,7 +270,7 @@ void anaread ()
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("***** module slave *********");
   Serial.println("***** portail gauche*********");
 
@@ -310,12 +310,25 @@ void setup() {
   inrotation = false;
   measold = 0;
 }
+void loop1() {
+//  measref = analogRead(refsensor);
+//  VoltageRef = (measref / 1024.0) * 5000; // Gets you mV
+  meas0 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+  delay(1); // 5 ms
+  meas1 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+  delay(1); // 5 ms
+  meas2 = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
+  meas = (meas0 + meas1 + meas2) / 3;
+  Voltage = (meas / 1024.0) * 5000; // Gets you mV
+
+  Serial.print("mV = "); // shows the voltage measured
+  Serial.println(Voltage );
+  Serial.print("Ref mV = "); // shows the voltage measured
+  Serial.println(VoltageRef );
+  delay(1000);
+}
 
 void loop() {
-  //  meas = analogRead(sensor); // Converts and read the analog input value (value from 0.0 to 1.0)
-  //  Voltage = (meas / 1024.0) * 5000; // Gets you mV
-  //  Serial.println(Voltage);
-
   countrot.update();
   trig.update();
 
