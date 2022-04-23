@@ -6,7 +6,7 @@
 #include <SPI.h>
 #include <LiquidCrystal_I2C.h>
 
-boolean debug = false;
+boolean debug = true;
 
 
 const String Pgarage =  "Wcd5KPhDxCObUdw6";
@@ -224,6 +224,7 @@ void senbit( boolean b) {
   //delay(1);
   delayMicroseconds(500);
   digitalWrite(clk, HIGH);
+  digitalWrite(data, HIGH);
 }
 void seriew(char c, boolean w)
 { byte a = c;

@@ -58,10 +58,12 @@ void setup() {
   Serial.println("Start esp8266 init  ...");
   char readReplay[] = "version";
   delay(2000);
-  ESP8266.begin(9600);
+  ESP8266.begin(57600);
   delay(2000);
   Serial.println("Trying to send AT+GMR ...");
   ESP8266.println("AT+GMR");
+  delay(3000);
+  ESP8266.println("AT+UART_DEF=57600,8,1,0,0");
   //delay(2000);
   //  for ( int i = 0; i < 4; i++)
   //  {

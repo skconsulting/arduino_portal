@@ -10,7 +10,7 @@
 
 #include <ESP8266WiFi.h>
 #include "EIoTCloudRestApiV1.0.h"
-#include <Wire.h>
+//#include <Wire.h>
 
 #define DEBUG_PROG
 
@@ -25,25 +25,21 @@
 EIoTCloudRestApi eiotcloud;
 int oldInputState;
 
-#define INPUT_PIN        2
+#define INPUT_PIN        0
 
 
 // change those lines
-//#define AP_USERNAME "sylvain.kritter@gmail.com"
 #define AP_USERNAME "baleinou"
-//#define AP_PASSWORD "2@LbFD7H4X7aqyh"
 #define AP_PASSWORD "tagada1956"
 
 #define TOKEN "2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj"
 
-
-
-String moduleId = "5";
+//String moduleId = "5";
 String parameterId = "Wcd5KPhDxCObUdw6";
 
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(74880);
   DEBUG_PRINTLN("Start...");
   eiotcloud.begin(AP_USERNAME, AP_PASSWORD);
   eiotcloud.SetToken(TOKEN);
@@ -57,9 +53,15 @@ void loop() {
 
   if (inputState != oldInputState)
   {
-    bool valueRet = eiotcloud.SetParameterValue(parameterId, String(inputState));
+    unsigned long diffReceive = millis();         // last time you connected to the server, in milliseconds
+    String id = "xaQJN6hjY4XS8XGB";
+    String co = "40.2";
+    bool valueRet = eiotcloud.SetParameterValue(id, co);
+    //bool valueRet1 = eiotcloud.SetParameterValue(parameterId, String(inputState));
     DEBUG_PRINT("SetParameterValue: ");
     DEBUG_PRINTLN(valueRet);
     oldInputState = inputState;
+    unsigned long endReceive = millis();
+    DEBUG_PRINTLN((endReceive - diffReceive) / 1000);
   }
 }

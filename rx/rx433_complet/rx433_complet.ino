@@ -6,13 +6,13 @@
 #include "WiFiEsp.h"
 #include "SoftwareSerial.h"
 #include <RH_ASK.h> // (fait partie de Radiohead)
+//#include <LiquidCrystal_I2C.h>
 
-#include <LiquidCrystal_I2C.h>
-
-boolean debug = false;
+boolean debug = true;
 boolean wifil = true;
+boolean displayled = false;
 
-
+//
 const String Pgarage =  "Wcd5KPhDxCObUdw6";
 const String Pportail = "P5IbZrIejfJPLjH5";
 const String Ptemp =    "juuWGLJh4kgFfPOm";
@@ -23,24 +23,20 @@ const String stringTCf = String("fermeP"); //portail ferme
 const String stringGAo = String("ouvreG");// garage ouvert
 const String stringGAf = String("fermeG"); // garage ferme
 
+unsigned long startMillisP;  //timer portail
+unsigned long startMillisG;  //timer garage
+unsigned long startMillisS; // timer sensor
+unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
+const unsigned long postingInterval = 3000; // delay between updates, in milliseconds
+const unsigned long diffReceive = 1000;         // last time you connected to the server, in milliseconds
+unsigned long endReceive = 0;         // last time you connected to the server, in milliseconds
 
+unsigned long currentMillis;
+const unsigned long period = 60000;  //timeout in milliseconds 60000
 const int sizeStack = 6; // size of stack
 String stack[sizeStack] ;
 int pointStack = -1;
 
-const char ssid[] = "baleinou";            // your network SSID (name)
-const char pass[] = "tagada1956";        // your network password
-const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj";   //
-
-const unsigned long postingInterval = 2000; // delay between updates, in milliseconds
-unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
-unsigned long diffReceive = 1000;         // last time you connected to the server, in milliseconds
-unsigned long endReceive = 0;         // last time you connected to the server, in milliseconds
-unsigned long startMillisP;  //timer portail
-unsigned long startMillisG;  //timer garage
-unsigned long startMillisS; // timer sensor
-unsigned long currentMillis;
-const unsigned long period = 60000;  //timeout in milliseconds 60000                                                                                         0secondes
 
 String mysold = "old";
 boolean lcdclear = true;
@@ -55,10 +51,10 @@ int status = WL_IDLE_STATUS;     // the Wifi radio's status
 #define DEFGA PD6     //   defaillance garage
 #define GAO   PD7     //  garage ouvert
 
-SoftwareSerial esp8266(9, 8);
+SoftwareSerial esp8266(9, 8);// RX TX
 //Bounce trig = Bounce();
 WiFiEspClient client;
-LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
+//LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
 RH_ASK driver;
 
 void pushString(String ins)
@@ -93,12 +89,12 @@ String pullString()
 
 void dumpString()
 {
-  Serial.println("start dump");
+  // Serial.println("start dump");
   for (int i = 0 ; i <= pointStack; i++) {
     //Serial.println(i);
     Serial.println(stack[i]);
   }
-  Serial.println("end of pile");
+  // Serial.println("end of pile");
 }
 boolean lookForString(String ins)
 {
@@ -112,29 +108,32 @@ boolean lookForString(String ins)
   }
   return res;
 }
-void printWifiStatus()
-{
-  // print the SSID of the network you're attached to
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength
-  long rssi = WiFi.RSSI();
-  Serial.print("Signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
-}
+//void printWifiStatus()
+//{
+//  // print the SSID of the network you're attached to
+//  Serial.print("SSID: ");
+//  Serial.println(WiFi.SSID());
+//
+//  // print your WiFi shield's IP address
+//  IPAddress ip = WiFi.localIP();
+//  Serial.print("IP Address: ");
+//  Serial.println(ip);
+//
+//  // print the received signal strength
+//  long rssi = WiFi.RSSI();
+//  Serial.print("Signal strength (RSSI):");
+//  Serial.print(rssi);
+//  Serial.println(" dBm");
+//}
 void setup()
 {
+  const char ssid[] = "baleinou";            // your network SSID (name)
+  const char pass[] = "tagada1956";        // your network password
+  const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj";   //
   Serial.begin(115200);
-  Serial.println("rx433_ccomplet");
+  Serial.println(F("rx433_ccomplet"));
   if (wifil) {
-    esp8266.begin(9600);
+    esp8266.begin(57600);
     WiFi.init(&esp8266);
     // check for the presence of the shield
     if (WiFi.status() == WL_NO_SHIELD) {
@@ -144,12 +143,12 @@ void setup()
     }
     // attempt to connect to WiFi network
     while ( status != WL_CONNECTED) {
-      Serial.println("Attempting to connect to WPA SSID ");
+      //Serial.println(F("Attempting to connect to WPA SSID "));
       // Connect to WPA/WPA2 network
       status = WiFi.begin(ssid, pass);
     }
-    Serial.println("You're connected to the network");
-    printWifiStatus();
+    Serial.println(F("You're connected to the network"));
+    // printWifiStatus();
   }
   pinMode(POO, OUTPUT); // Portail ouvert
   pinMode(POF, OUTPUT);// portail fermé
@@ -157,11 +156,13 @@ void setup()
   pinMode(GAF, OUTPUT); // garage fermé
   pinMode(DEFPO, OUTPUT); // defaillance portail
   pinMode(DEFGA, OUTPUT); // defaillance garage
-  lcd.init(); //initialize the lcd
-  lcd.backlight(); //open the backlight
-  lcd.clear();
-  lcd.setCursor(6, 1); // set the cursor to column 15, line 0
-  lcd.print("Start");
+  //  if (displayled) {
+  //    lcd.init(); //initialize the lcd
+  //    lcd.backlight(); //open the backlight
+  //    lcd.clear();
+  //    lcd.setCursor(6, 1); // set the cursor to column 15, line 0
+  //    lcd.print("Start");
+  //  }
   digitalWrite(GAO, HIGH);
   delay(200);
   digitalWrite(GAO, LOW);
@@ -192,7 +193,9 @@ void setup()
   //trig.interval(1); // debounce interval in ms
   if (!driver.init()) {
     Serial.println(F("Echec de l'initialisation de Radiohead"));
-    lcd.print("NO SIGNAL");
+    //    if (displayled) {
+    //      lcd.print("NO SIGNAL");
+    //    }
   }
   httpRequestFormat(Pportail, "2");
   httpRequestFormat(Pgarage, "2");
@@ -214,10 +217,10 @@ void httpRequest(String Pid , float command)
 {
   const char server[] = "cloud.iot-playground.com";
   const String content = "EIOT-AuthToken : 2uUINeYK2uaTUuAPfe1TqK0p1nlAaqcYsKrFFffj";   //
-  if (debug) {
-    Serial.println(Pid);
-    Serial.println(command);
-  }
+  //  if (debug) {
+  //    Serial.println(Pid);
+  //    Serial.println(command);
+  //  }
   if (wifil) {
     //  close any connection before send a new request
     // this will free the socket on the WiFi shield
@@ -240,56 +243,61 @@ void httpRequest(String Pid , float command)
     }
     else {
       // if you couldn't make a connection
-      Serial.println(F("Connection failed"));
+      // Serial.println(F("Connection failed"));
     }
   }
 }
 void httpRequestFormat(String Pid , String command)
 {
-  if (debug) {
-    Serial.println("Pid:" + String(Pid));
-    Serial.println("command:" + String(command));
-  }
+  //  if (debug) {
+  //    Serial.println("Pid:" + String(Pid));
+  //    Serial.println("command:" + String(command));
+  //  }
   String tempo = Pid + "_" + command;
   if (!lookForString(tempo)) {
     pushString(tempo);
   }
 }
 
-void commande (String sub, boolean ht) {
+void commande (String sub, boolean ht)
+{
   if (sub[0] == 'T') {
-    if (debug) {
-      Serial.print("temperature: ");
-      Serial.println(sub.substring(1, 6) + " C");
-    }
-    //    if (ht) {
-    //      httpRequest(Ptemp, sub.substring(1, 6));
+    //    if (debug) {
+    //      Serial.print("temperature: ");
+    //      Serial.println(sub.substring(1, 6) + " C");
     //    }
+    if (ht) {
+      httpRequestFormat(Ptemp, sub.substring(1, 6));
+    }
     sub.replace("+0", "+ ");
     sub.replace("-0", "- ");
-    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
-    lcd.print("Temp: " + sub.substring(1, 6) + "C");
-    lcdclear = true;
+    //    if (displayled) {
+    //      lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    //      lcd.print("Temp: " + sub.substring(1, 6) + "C");
+    //      lcdclear = true;
+    //    }
     startMillisS = millis();
   }
   else if (sub[0] == 'H') {
-    if (debug) {
-      Serial.print("humidity: ");
-      Serial.println(sub.substring(1, 6) + " %");
-    }
-    lcd.setCursor(0, 1); // set the cursor to column 15, line 0
-    sub.replace("+0", "+ ");
-    lcd.print("Humi: " + sub.substring(1, 6) + "%");
-    lcdclear = true;
+    //    if (debug) {
+    //      Serial.print("humidity: ");
+    //      Serial.println(sub.substring(1, 6) + " %");
+    //    }
+    //    if (displayled) {
+    //      lcd.setCursor(0, 1); // set the cursor to column 15, line 0
+    //      sub.replace("+0", "+ ");
+    //      lcd.print("Humi: " + sub.substring(1, 6) + "%");
+    //      lcdclear = true;
+    //    }
     if (ht) {
       httpRequestFormat(Phum, sub.substring(2, 6));
     }
     startMillisS = millis();
   }
   else  if (sub == stringTCo) { // portail ouvert
-    if (debug) {
-      Serial.println("this is Po");
-    } // portail ouvert
+    //    if (debug) {
+    //      Serial.println("this is Po");
+    //    } // portail ouvert
     digitalWrite(POO, HIGH);
     digitalWrite(POF, LOW);
     digitalWrite(DEFPO, LOW);
@@ -299,9 +307,9 @@ void commande (String sub, boolean ht) {
     startMillisP = millis();
   }
   else if (sub == stringTCf) {// portail fermé
-    if (debug) {
-      Serial.println("this is Pf");
-    } // portail fermé
+    //    if (debug) {
+    //      Serial.println("this is Pf");
+    //    } // portail fermé
     digitalWrite(POO, LOW);
     digitalWrite(POF, HIGH);
     digitalWrite(DEFPO, LOW);
@@ -311,9 +319,9 @@ void commande (String sub, boolean ht) {
     startMillisP = millis();
   }
   else if (sub == stringGAo) { // garage ouvert
-    if (debug) {
-      Serial.println("this is Go");
-    }  // garage ouvert
+    //    if (debug) {
+    //      Serial.println("this is Go");
+    //    }  // garage ouvert
     digitalWrite(GAO, HIGH);
     digitalWrite(GAF, LOW);
     digitalWrite(DEFGA, LOW);
@@ -323,9 +331,9 @@ void commande (String sub, boolean ht) {
     startMillisG = millis();
   }
   else if (sub == stringGAf) { // garage ferme
-    if (debug) {
-      Serial.println("1 this is Gf"); // garage ferme
-    }
+    //    if (debug) {
+    //      Serial.println("1 this is Gf"); // garage ferme
+    //    }
     digitalWrite(GAO, LOW);
     digitalWrite(GAF, HIGH);
     digitalWrite(DEFGA, LOW);
@@ -335,9 +343,9 @@ void commande (String sub, boolean ht) {
     startMillisG = millis();
   }
   else {
-    if (debug) {
-      Serial.println("this is unk");
-    }
+    //    if (debug) {
+    //      Serial.println("this is unk");
+    //    }
     digitalWrite(POO, LOW);
     digitalWrite(POF, LOW);
     digitalWrite(GAO, LOW);
@@ -355,6 +363,7 @@ String converter(uint8_t *str) {
 }
 
 void loop() {
+
   currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
 
   if (((currentMillis - lastConnectionTime ) > postingInterval) & ((currentMillis - endReceive)  > diffReceive)) {
@@ -389,15 +398,16 @@ void loop() {
   }
   if (currentMillis - startMillisS >= period)  //test whether the period has elapsed for sensor
   {
-    if (lcdclear) {
-      lcd.clear();
-      lcdclear = false;
-      lcd.setCursor(0, 0); // set the cursor to column 0, line 0
-      lcd.print("NO SIGNAL");
-      httpRequestFormat(Ptemp, "0");
-      httpRequestFormat(Phum, "0");
-      startMillisS = millis();
-    }
+    // if (displayled) {
+    //      if (lcdclear) {
+    //        lcd.clear();
+    //        lcdclear = false;
+    //        lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    //        lcd.print("NO SIGNAL");
+    //      }
+    httpRequestFormat(Ptemp, "0");
+    httpRequestFormat(Phum, "0");
+    startMillisS = millis();
   }
 
   if (driver.recv(buf, &buflen))
@@ -418,12 +428,12 @@ void loop() {
     //    Serial.print("diff:");
     //    Serial.println(sub != mysold);
     //    Serial.println("sub :" + sub);
-
+    if (debug) {
+      Serial.println("New Message recu: " + sub);
+      //Serial.println("------");
+    }
     if (sub != mysold) {
-      if (debug) {
-        Serial.println("New Message recu: " + sub);
-        Serial.println("------");
-      }
+
       mysold = sub;
       commande(sub, true);
 

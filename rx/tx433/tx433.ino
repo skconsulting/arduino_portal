@@ -1,7 +1,7 @@
 
 #include <RH_ASK.h>
 #include <SPI.h> // Not actually used but needed to compile 
-RH_ASK driver;
+RH_ASK driver; // data on 12
 //RH_ASK driver(2000, 11, 10);
 const char *msg = "ouvreP";
 
@@ -10,7 +10,7 @@ String stringTCf = String("fermeP"); //portail ferme
 String stringGAo = String("ouvreG");// garage ouvert
 String stringGAf = String("fermeG"); // garage ferme
 
-int delaybs= 5000;
+int delaybs= 2000;
 
 void sendmessage(String instr) {
   int n = instr.length();
@@ -52,7 +52,7 @@ void setup()
     Serial.println("init failed");
 }
 
-void loop1()
+void loop()
 {
   float humid = 40.21;
   float tempera = -12.36;
@@ -82,7 +82,7 @@ void loop1()
   Serial.println("fermeG and fermeP");
   delay(delaybs);
 }
-void loop()
+void loop1()
 {
   sendmessage(stringGAo);
   delay(delaybs);
