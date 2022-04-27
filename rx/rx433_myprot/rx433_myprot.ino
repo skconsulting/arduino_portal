@@ -1,9 +1,8 @@
 /**********************************************************
-  my protocol transmit
+  my protocol transmit 27 04 2022
 */
-
 #include <RH_ASK.h> // (fait partie de Radiohead)
-#include <SPI.h>
+//#include <SPI.h>
 #include <LiquidCrystal_I2C.h>
 
 boolean debug = true;
@@ -48,7 +47,8 @@ const uint8_t buflen = sizeof(buf);
 //A5 SCL
 const int  clk = 8;    // clock
 const int data = 9;       // data
-
+//const int rstesp = d17;       // data
+#define rstesp   13     //  reset esp
 LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
 RH_ASK driver;
 
@@ -67,8 +67,10 @@ void setup()
 
   pinMode(clk, OUTPUT);
   pinMode(data, OUTPUT);
-  digitalWrite(clk, HIGH);
+  pinMode(rstesp, OUTPUT); // defaillance garage
   digitalWrite(data, HIGH);
+  digitalWrite(clk, HIGH);
+  digitalWrite(rstesp, HIGH);
 
   pinMode(POO, OUTPUT); // Portail ouvert
   pinMode(POF, OUTPUT);// portail fermé
@@ -76,6 +78,7 @@ void setup()
   pinMode(GAF, OUTPUT); // garage fermé
   pinMode(DEFPO, OUTPUT); // defaillance portail
   pinMode(DEFGA, OUTPUT); // defaillance garage
+
   lcd.init(); //initialize the lcd
   lcd.backlight(); //open the backlight
   lcd.clear();
@@ -92,6 +95,7 @@ void setup()
   digitalWrite(GAF, HIGH);
   delay(200);
   digitalWrite(GAF, LOW);
+
   delay(200);
   digitalWrite(POO, HIGH);
   delay(200);
@@ -108,10 +112,16 @@ void setup()
   digitalWrite(DEFPO, HIGH);
   digitalWrite(DEFGA, HIGH);
 
+
   if (!driver.init()) {
     Serial.println(F("Echec de l'initialisation de Radiohead"));
     lcd.print("NO SIGNAL");
   }
+  delay(1000);
+  digitalWrite(rstesp, LOW);
+  delay(1000);
+  digitalWrite(rstesp, HIGH);
+  delay(1000);
   httpRequest(Pportail, "2");
   httpRequest(Pgarage, "2");
   httpRequest(Phum, "0");
