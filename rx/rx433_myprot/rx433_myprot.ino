@@ -18,6 +18,15 @@ const String stringTCf = String("fermeP"); //portail ferme
 const String stringGAo = String("ouvreG");// garage ouvert
 const String stringGAf = String("fermeG"); // garage ferme
 
+const String message1 = String("messa1");
+//const String message2 = String("messa2");
+const String message3 = String("messa3");
+//const String message4 = String("messa4");
+const String message5 = String("messa5");
+const String message6 = String("messa6");
+const String message7 = String("messa7");
+const String message8 = String("messa8");
+
 const String startOfHeading =    "00000001";
 const String endOfTransmission = "00000100";
 
@@ -132,7 +141,61 @@ void setup()
 }
 
 void commande (String sub, boolean ht) {
-  if (sub[0] == 'T') {
+  if (sub == message1) { // portail ouvre
+    if (debug) {
+      Serial.println("Portail ouvre");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Portail ouvre");
+    lcdclear = true;
+  }
+  else if (sub == message3) { // portail ferme
+    if (debug) {
+      Serial.println("Portail ferme");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Portail ferme");
+    lcdclear = true;
+  }
+  else if (sub == message5) { // portail ouvre puis ferme
+    if (debug) {
+      Serial.println("Portail ouvre puis ferme");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("P ouvre, ferme");
+    lcdclear = true;
+  }
+  else if (sub == message6) { // portail ferme puis ouvre
+    if (debug) {
+      Serial.println("Portail ferme puis ouvre");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("P. ferme, ouvre");
+    lcdclear = true;
+  }
+  else if (sub == message7) { // overdrive
+    if (debug) {
+      Serial.println("overdrive");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Overdrive !!");
+    lcdclear = true;
+  }
+   else if (sub == message8) { // overtime
+    if (debug) {
+      Serial.println("overtime");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Overtime !!");
+    lcdclear = true;
+  }
+  else if (sub[0] == 'T') {
     if (debug) {
       Serial.print("temperature: ");
       Serial.println(sub.substring(1, 6) + " C");
