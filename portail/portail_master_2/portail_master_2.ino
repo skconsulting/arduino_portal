@@ -29,7 +29,7 @@ const unsigned long rotStop = 20000; // stop rotation after 20 seconds
 const unsigned long sendPOC = 30000; //send info portail every 30 seconds
 const unsigned long opendelay = 1000; // 1 second afte command to open
 const unsigned long closedelay = 0; // 0 second after command to close
-const unsigned long delayCurrentDrive = 500; // delay before read motor current in ms
+const unsigned long delayCurrentDrive = 100; // delay before read motor current in ms
 const unsigned long delaybetweentrig = 2000; // delay before 2 trigger action
 const unsigned long delaybetweencount = 100; // delay before 2 rot action
 
@@ -40,7 +40,7 @@ const uint8_t minmotor = 150; // value when approaching end of run
 volatile boolean triggerFlag = false;
 volatile boolean counterFlag = false;
 
-uint8_t messageFlag = 0; // 0 pas de message, 1 ouvre, 2 repos ouvert, 3 ferme , repos ferme, 5 ouvre puis ferme, 6 ferme puis ouvre, 7 overdrive, 8 overtime
+boolean messageFlag = false; // 0 pas de message, 1 ouvre, 2 repos ouvert, 3 ferme , repos ferme, 5 ouvre puis ferme, 6 ferme puis ouvre, 7 overdrive, 8 overtime
 uint8_t stateportail = 0; // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 uint8_t calibre ;
 int maxrotationopen, maxrotationclose;
@@ -76,7 +76,7 @@ const String message3 = String("messa3");
 const String message5 = String("messa5");
 const String message6 = String("messa6");
 const String message7 = String("messa7");
-//const String message8 = String("messa8");
+const String message8 = String("messa8");
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -236,37 +236,33 @@ void counteractionISR (void) {
 void triggeraction (void) { // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
   // run each time action button is pressed
   digitalWrite(LED_BUILTIN, LOW);
-  if (debug) {
-    Serial.print(F("old stateportail: "));
-    Serial.println( stateportail);
-  }
+  //  if (debug) {
+  //    Serial.print(F("old stateportail: "));
+  //    Serial.println( stateportail);
+  //  }
   switch (stateportail) {
     case 0: {
         stateportail = 1;
         sendmessage(stringCAo);
-        sendmessage(message1);
-        startMessage = millis();
+        sendStatus(message1);
         break;
       }
     case 1: {
         stateportail = 3;
         sendmessage(stringCAf);
-        sendmessage(message5);
-        startMessage = millis();
+        sendStatus(message5);
         break;
       }
     case 2 : {
         stateportail = 3;
         sendmessage(stringCAf);
-        sendmessage(message3);
-        startMessage = millis();
+        sendStatus(message3);
         break;
       }
     case 3: {
         stateportail = 1;
         sendmessage(stringCAo);
-        sendmessage(message6);
-        startMessage = millis();
+        sendStatus(message6);
         break;
       }
   }
@@ -275,6 +271,11 @@ void triggeraction (void) { // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
     Serial.println( stateportail);
   }
   actionportail();
+}
+void sendStatus (String ins) {
+  sendmessage(ins);
+  startMessage = millis();
+  messageFlag=true;
 }
 
 void anaread ()
@@ -303,8 +304,7 @@ void anaread ()
   }
 
   if (Voltage < VoltageRef) {
-    sendmessage(message7);
-    startMessage = millis();
+
     digitalWrite(LED_BUILTIN, HIGH);
     if (debug) {
       Serial.print(F("overdrive : "));
@@ -372,7 +372,7 @@ void setup() {
   pinMode(countrot_pin, INPUT_PULLUP);
   pinMode(trig_pin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(countrot_pin), counteractionISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(trig_pin), triggeractionISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(trig_pin), triggeractionISR, FALLING);
 
   POC.attach(POC_pin, INPUT_PULLUP);
   POC.interval(10); // debounce interval in ms
@@ -426,7 +426,7 @@ void loop1() {
   Serial.println(Voltage );
   Serial.print("Ref mV = "); // shows the voltage measured
   Serial.println(VoltageRef );
-  delay(1000);
+  // delay(1000);
 }
 
 void loop() {
@@ -435,14 +435,16 @@ void loop() {
   POC.update();
   curTime = millis();
   if ((curTime - startMessage) > messageDelay) {
-    messageFlag = 0;
+    messageFlag = false;
   }
-  if ((curTime - humtempPOC > sendPOC) & !inrotation  & messageFlag != 0)
+  if ((curTime - humtempPOC > sendPOC) & !inrotation  & !messageFlag)
   {
     humtempPOC = millis();
     float humid = dht.readHumidity();
+    //float humid = 10.;
     //    // Read temperature as Celsius
     float tempera = dht.readTemperature();
+    //float tempera = 45.3;
     if (isnan(humid) || isnan(tempera)) {
       if (debug) {
         Serial.println("Failed to read from DHT sensor!");
@@ -469,12 +471,12 @@ void loop() {
     }
   }
   if ( inrotation ) {
-    // Serial.println(curTime - startROT);
     if (curTime - startROT > delayCurrentDrive) {// measure after 0.5 sec
       //Serial.println("start measure");
       anaread();
     }
     if (curTime - startROT > rotStop ) { //stop after rotstop
+      sendStatus(message8);
       inrotation = false;
       if (calibre == 2) {
         if (debug) {
@@ -543,7 +545,9 @@ void loop() {
       Serial.println(F("NOT OK"));
       //}
     }
+    triggerFlag = false;
   }
+
   if ( counterFlag) {
     counterFlag = false;
     if (debug) {
@@ -557,4 +561,5 @@ void loop() {
       }
     }
   }
+  counterFlag = false;
 }
