@@ -1,6 +1,6 @@
-
+// test tx433 as per portail commands with temperature/humidity
 #include <RH_ASK.h>
-#include <SPI.h> // Not actually used but needed to compile 
+//#include <SPI.h> // Not actually used but needed to compile 
 RH_ASK driver; // data on 12
 //RH_ASK driver(2000, 11, 10);
 const char *msg = "ouvreP";
@@ -10,7 +10,7 @@ String stringTCf = String("fermeP"); //portail ferme
 String stringGAo = String("ouvreG");// garage ouvert
 String stringGAf = String("fermeG"); // garage ferme
 
-int delaybs= 2000;
+int delaybs= 200;
 
 void sendmessage(String instr) {
   int n = instr.length();
@@ -58,26 +58,22 @@ void loop()
   float tempera = -12.36;
   String strtemp = alignT(tempera, "T");
   sendmessage(strtemp);
-  delay(delaybs);
-  strtemp = alignT(humid, "H");
-  sendmessage(strtemp);
-  delay(delaybs);
   sendmessage(stringGAo);
   delay(delaybs);
+  strtemp = alignT(humid, "H");
   sendmessage(stringTCo);
-  Serial.println("ouvreG and ouvreP");
+  sendmessage(strtemp);
   delay(delaybs);
+  Serial.println("ouvreG and ouvreP");
 
   humid = 10.10;
   tempera = 25.82;
   strtemp = alignT(tempera, "T");
   sendmessage(strtemp);
+   sendmessage(stringGAf);
   delay(delaybs);
   strtemp = alignT(humid, "H");
   sendmessage(strtemp);
-  delay(delaybs);
-  sendmessage(stringGAf);
-  delay(delaybs);
   sendmessage(stringTCf);
   Serial.println("fermeG and fermeP");
   delay(delaybs);

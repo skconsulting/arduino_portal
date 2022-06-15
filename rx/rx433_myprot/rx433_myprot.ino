@@ -1,5 +1,8 @@
 /**********************************************************
-  my protocol transmit 27 04 2022
+  rx433 portail with my protocol transmit to esp8266 
+  27 04 2022 to be loaded on arduino, 
+  link with esp8266 programmed with esp826_complet.
+  include decoding of status message from portail
 */
 #include <RH_ASK.h> // (fait partie de Radiohead)
 //#include <SPI.h>

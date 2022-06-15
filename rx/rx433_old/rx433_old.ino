@@ -1,6 +1,6 @@
 /**********************************************************
   Radiohead_reception_433MHz
-  rx 433 with led and temperature/humidity
+  rx 433 old for portail with led and temperature/humidity, no wifi
 */
 
 #include <RH_ASK.h> // (fait partie de Radiohead)
@@ -108,35 +108,35 @@ void setup()
 
 void loop()
 {
-  int i ;
-    digitalWrite(GAO, HIGH);
-    delay(500);
-    digitalWrite(GAO, LOW);
-    delay(500);
-    digitalWrite(DEFGA, HIGH);
-    delay(500);
-    digitalWrite(DEFGA, LOW);
-    delay(500);
-  
-    digitalWrite(GAF, HIGH);
-    delay(500);
-    digitalWrite(GAF, LOW);
-    delay(500);
-  
-    digitalWrite(POO, HIGH);
-    delay(500);
-    digitalWrite(POO, LOW);
-    delay(500);
-  
-    digitalWrite(DEFPO, HIGH);
-    delay(500);
-    digitalWrite(DEFPO, LOW);
-    delay(500);
-  
-    digitalWrite(POF, HIGH);
-    delay(500);
-    digitalWrite(POF, LOW);
-    delay(500);
+ int i ;
+//    digitalWrite(GAO, HIGH);
+//    delay(500);
+//    digitalWrite(GAO, LOW);
+//    delay(500);
+//    digitalWrite(DEFGA, HIGH);
+//    delay(500);
+//    digitalWrite(DEFGA, LOW);
+//    delay(500);
+//  
+//    digitalWrite(GAF, HIGH);
+//    delay(500);
+//    digitalWrite(GAF, LOW);
+//    delay(500);
+//  
+//    digitalWrite(POO, HIGH);
+//    delay(500);
+//    digitalWrite(POO, LOW);
+//    delay(500);
+//  
+//    digitalWrite(DEFPO, HIGH);
+//    delay(500);
+//    digitalWrite(DEFPO, LOW);
+//    delay(500);
+//  
+//    digitalWrite(POF, HIGH);
+//    delay(500);
+//    digitalWrite(POF, LOW);
+//    delay(500);
 
   currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
   if (currentMillis - startMillisP >= period)  //test whether the period has elapsed for portail

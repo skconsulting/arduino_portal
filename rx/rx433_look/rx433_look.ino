@@ -1,10 +1,8 @@
 /**********************************************************
-  my protocol transmit
-  rx433 with my i2c protocol 
+  my protocol transmit 27 04 2022
 */
-
 #include <RH_ASK.h> // (fait partie de Radiohead)
-#include <SPI.h>
+//#include <SPI.h>
 #include <LiquidCrystal_I2C.h>
 
 boolean debug = true;
@@ -19,6 +17,15 @@ const String stringTCo = String("ouvreP"); // portail ouvert
 const String stringTCf = String("fermeP"); //portail ferme
 const String stringGAo = String("ouvreG");// garage ouvert
 const String stringGAf = String("fermeG"); // garage ferme
+
+const String message1 = String("messa1");
+//const String message2 = String("messa2");
+const String message3 = String("messa3");
+//const String message4 = String("messa4");
+const String message5 = String("messa5");
+const String message6 = String("messa6");
+const String message7 = String("messa7");
+const String message8 = String("messa8");
 
 const String startOfHeading =    "00000001";
 const String endOfTransmission = "00000100";
@@ -47,9 +54,10 @@ const uint8_t buflen = sizeof(buf);
 
 //A4 SDA
 //A5 SCL
-//const int  clk = 8;    // clock
-//const int data = 9;       // data
-
+const int  clk = 8;    // clock
+const int data = 9;       // data
+//const int rstesp = d17;       // data
+#define rstesp   13     //  reset esp
 LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
 RH_ASK driver;
 
@@ -65,12 +73,13 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("rx4323_myprot");
-  Wire.begin();
 
-  //  pinMode(clk, OUTPUT);
-  //  pinMode(data, OUTPUT);
-  //  digitalWrite(clk, HIGH);
-  //  digitalWrite(data, HIGH);
+  pinMode(clk, OUTPUT);
+  pinMode(data, OUTPUT);
+  pinMode(rstesp, OUTPUT); // defaillance garage
+  digitalWrite(data, HIGH);
+  digitalWrite(clk, HIGH);
+  digitalWrite(rstesp, HIGH);
 
   pinMode(POO, OUTPUT); // Portail ouvert
   pinMode(POF, OUTPUT);// portail fermé
@@ -78,6 +87,7 @@ void setup()
   pinMode(GAF, OUTPUT); // garage fermé
   pinMode(DEFPO, OUTPUT); // defaillance portail
   pinMode(DEFGA, OUTPUT); // defaillance garage
+
   lcd.init(); //initialize the lcd
   lcd.backlight(); //open the backlight
   lcd.clear();
@@ -94,6 +104,7 @@ void setup()
   digitalWrite(GAF, HIGH);
   delay(200);
   digitalWrite(GAF, LOW);
+
   delay(200);
   digitalWrite(POO, HIGH);
   delay(200);
@@ -110,10 +121,16 @@ void setup()
   digitalWrite(DEFPO, HIGH);
   digitalWrite(DEFGA, HIGH);
 
+
   if (!driver.init()) {
     Serial.println(F("Echec de l'initialisation de Radiohead"));
     lcd.print("NO SIGNAL");
   }
+  delay(1000);
+  digitalWrite(rstesp, LOW);
+  delay(1000);
+  digitalWrite(rstesp, HIGH);
+  delay(1000);
   httpRequest(Pportail, "2");
   httpRequest(Pgarage, "2");
   httpRequest(Phum, "0");
@@ -124,7 +141,61 @@ void setup()
 }
 
 void commande (String sub, boolean ht) {
-  if (sub[0] == 'T') {
+  if (sub == message1) { // portail ouvre
+    if (debug) {
+      Serial.println("Portail ouvre");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Portail ouvre");
+    lcdclear = true;
+  }
+  else if (sub == message3) { // portail ferme
+    if (debug) {
+      Serial.println("Portail ferme");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Portail ferme");
+    lcdclear = true;
+  }
+  else if (sub == message5) { // portail ouvre puis ferme
+    if (debug) {
+      Serial.println("Portail ouvre puis ferme");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("P ouvre, ferme");
+    lcdclear = true;
+  }
+  else if (sub == message6) { // portail ferme puis ouvre
+    if (debug) {
+      Serial.println("Portail ferme puis ouvre");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("P. ferme, ouvre");
+    lcdclear = true;
+  }
+  else if (sub == message7) { // overdrive
+    if (debug) {
+      Serial.println("overdrive");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Overdrive !!");
+    lcdclear = true;
+  }
+   else if (sub == message8) { // overtime
+    if (debug) {
+      Serial.println("overtime");
+    }
+    lcd.clear();
+    lcd.setCursor(0, 0); // set the cursor to column 0, line 0
+    lcd.print("Overtime !!");
+    lcdclear = true;
+  }
+  else if (sub[0] == 'T') {
     if (debug) {
       Serial.print("temperature: ");
       Serial.println(sub.substring(1, 6) + " C");
@@ -218,6 +289,43 @@ void commande (String sub, boolean ht) {
   }
 }
 
+void senbit( boolean b) {
+  digitalWrite(data, b);
+  //delay(1);
+  delayMicroseconds(500);
+  digitalWrite(clk, LOW);
+  //delay(1);
+  delayMicroseconds(500);
+  digitalWrite(clk, HIGH);
+  digitalWrite(data, HIGH);
+}
+void seriew(char c, boolean w)
+{ byte a = c;
+  for (int i = 0; i <= 7; i++) {
+    bool ab = a % 2;
+    senbit(ab);
+    if (w) {
+      Serial.println(ab);
+    }
+    a /= 2;                 // move to next significant bit
+  }
+}
+
+void sendbeacon(String s, bool w)
+{
+  bool ab ;
+  for (int i = 0; i <= 7; i++) {
+    if (s[7 - i] == '0') {
+      ab = false;
+    } else {
+      ab = true;
+    }
+    senbit(ab);
+    if (w) {
+      Serial.println(ab);
+    }
+  }
+}
 void httpRequest(String Pid , String command)
 {
   if (debug) {
@@ -225,11 +333,15 @@ void httpRequest(String Pid , String command)
     Serial.println("command:" + String(command));
   }
   String tempo = Pid + "_" + command;
-  char buffer[32];
-  tempo.toCharArray(buffer, 32);
-  Wire.beginTransmission(0x25);
-  Wire.write(buffer);
-  Wire.endTransmission();
+  //  pushString(tempo);
+  //noInterrupts();
+  sendbeacon(startOfHeading, false);
+  for (int i = 0; i < tempo.length(); i++)
+  { seriew(tempo[i], false);
+  }
+  sendbeacon(endOfTransmission, false);
+  //delay(200);
+  //interrupts();
 }
 
 void loop1() {

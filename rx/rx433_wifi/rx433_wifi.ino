@@ -1,4 +1,6 @@
 /*
+  test to launch command to iot ground sequentially
+
   WiFiEsp example: WebClientRepeating
 
   This sketch connects to a web server and makes an HTTP request

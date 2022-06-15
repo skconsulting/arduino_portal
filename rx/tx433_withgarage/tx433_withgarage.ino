@@ -71,7 +71,7 @@ void setup()
   startPOC = millis();  //initial start time
   oup.attach(ouvrePortail_pin, INPUT_PULLUP);
   oup.interval(10); // debounce interval in ms
-  Serial.begin(9600);    // Debugging only
+  Serial.begin(115200);    // Debugging only
   bluetooth.begin(9600);                    // initialisation connexion série Bluetooth à 9600 bauds
 
   Serial.println("init start");
