@@ -52,7 +52,6 @@ String MotDePasse      = "tagada1956"; // Garder les guillements
 #include "SoftwareSerial.h"
 SoftwareSerial ESP8266(9, 8); // RXPin, TXpin seen from arduino TX/RX for esp8266
 
-
 long int baudrate[] = {9600, 57600, 76800, 115200};
 
 void setup() {
@@ -73,12 +72,11 @@ void setup() {
   {
     Serial.println("Success " + String(baudrate0));
     ESP8266.println("AT+UART_DEF=9600,8,1,0,0");
-    // break;
   }
   else {
     Serial.println("Fail " + String(baudrate0));
   }
-  ESP8266.println("AT+UART_DEF=9600,8,1,0,0");
+
   //delay(2000);
   // rsearch of baudrate
   //  for ( int i = 0; i < 4; i++)
