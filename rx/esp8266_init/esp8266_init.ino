@@ -1,4 +1,7 @@
 /**
+
+   init esp8266 to 9600 bauds
+
    This program will create a pass-through serial connection to the ESP module. This makes it possible to send AT commands to the device.
    For a new device, you might have to try several connections speeds! (see comment at line 54: "your esp's baud rate might be different")
    Open the Serial Monitor (Tools>Serial Monitor) to send AT-commands.
@@ -38,33 +41,46 @@
 
 */
 
-#include <SoftwareSerial.h>
 String NomduReseauWifi = "baleinou"; // Garder les guillements
 String MotDePasse      = "tagada1956"; // Garder les guillements
 
 
-// Connect the TX line from the ESP module to the Arduino's pin 2
-// and the RX line from the ESP module to the Arduino's pin 3
-// Emulate EspSerial on pins 2/3 if not present
+// Connect the TX line from the ESP module to the Arduino's pin 9
+// and the RX line from the ESP module to the Arduino's pin 8
+// Emulate EspSerial on pins 8/9 if not present
 
 #include "SoftwareSerial.h"
-SoftwareSerial ESP8266(9, 8); // RX, TX
+SoftwareSerial ESP8266(9, 8); // RXPin, TXpin seen from arduino TX/RX for esp8266
+
 
 long int baudrate[] = {9600, 57600, 76800, 115200};
 
 void setup() {
 
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println("Start esp8266 init  ...");
   char readReplay[] = "version";
   delay(2000);
-  ESP8266.begin(57600);
+  //
+  // when bauderate found:
+  long int baudrate0 = 9600;
+  ESP8266.begin(baudrate0);
   delay(2000);
   Serial.println("Trying to send AT+GMR ...");
   ESP8266.println("AT+GMR");
   delay(3000);
-  ESP8266.println("AT+UART_DEF=57600,8,1,0,0");
+  if (ESP8266.find(readReplay))
+  {
+    Serial.println("Success " + String(baudrate0));
+    ESP8266.println("AT+UART_DEF=9600,8,1,0,0");
+    // break;
+  }
+  else {
+    Serial.println("Fail " + String(baudrate0));
+  }
+  ESP8266.println("AT+UART_DEF=9600,8,1,0,0");
   //delay(2000);
+  // rsearch of baudrate
   //  for ( int i = 0; i < 4; i++)
   //  {
   //    Serial.println("try baudrate  ..." + String(baudrate[i]));
