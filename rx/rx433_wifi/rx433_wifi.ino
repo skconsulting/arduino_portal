@@ -1,5 +1,7 @@
 /*
   test to launch command to iot ground sequentially
+    esp8266 first init witth esp8266_init
+  arduino nano connected to esp8266 (d9,d8)
 
   WiFiEsp example: WebClientRepeating
 
@@ -15,8 +17,7 @@
 // Emulate Serial1 on pins 6/7 if not present
 #ifndef HAVE_HWSERIAL1
 #include "SoftwareSerial.h"
-SoftwareSerial Serial1(9, 8);
-// RX, TX //SoftwareSerial Serial1(, 8); // RX, TX D9 D8
+SoftwareSerial Serial1(9, 8); // RXPin, TXpin in arduino , TX/RX for esp8266
 #endif
 
 char ssid[] = "baleinou";            // your network SSID (name)
@@ -27,6 +28,7 @@ String Pgarage = "Wcd5KPhDxCObUdw6";
 String Ptemp = "juuWGLJh4kgFfPOm";
 String Phum = "xaQJN6hjY4XS8XGB";
 const String Pportail = "P5IbZrIejfJPLjH5";
+const String PowerSup = "ID404jqOsgfysvgX";
 
 //char server[] = "arduino.cc";
 char server[] = "cloud.iot-playground.com";
@@ -95,6 +97,8 @@ void loop()
   delay(delai);
   httpRequest(Phum, role);
   delay(delai);
+  httpRequest(PowerSup, role);
+  delay(delai);
 
 }
 
@@ -103,8 +107,29 @@ void loop()
 
 void httpRequest(String Pid , double command)
 {
+  String itemd;
+
+  if (Pid == "Wcd5KPhDxCObUdw6") {
+    itemd = "Pgarage";
+  }
+  else if (Pid == "juuWGLJh4kgFfPOm") {
+    itemd = "Ptemp";
+  }
+  else if (Pid == "xaQJN6hjY4XS8XGB") {
+    itemd = "Phum";
+  }
+  else if (Pid == "P5IbZrIejfJPLjH5") {
+    itemd = "Pportail";
+  }
+  else if (Pid == "ID404jqOsgfysvgX") {
+    itemd = "PowerSup";
+  }
+  else {
+    Serial.println("Error PID");
+  }
   Serial.println();
-  Serial.println("Pid:" + String(Pid));
+  //Serial.println("Pid:" + String(Pid));
+  Serial.println("Pid: " + String(Pid) + " : " + String(itemd));
   Serial.println("command:" + String(command));
 
   // close any connection before send a new request
