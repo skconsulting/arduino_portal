@@ -78,7 +78,7 @@ void setup() {
   timeClient.setTimeOffset(7200);
 
 
-  pinMode(INPUT_PIN, INPUT_PULLUP);
+  pinMode(INPUT_PIN, INPUT);
   pinMode(led_pin, OUTPUT);
   digitalWrite(led_pin, LOW);
 
@@ -181,57 +181,64 @@ void sendmail(String txtMessage, String importance) {
 void loop() {
   delay(5000);
   timeClient.update();
+  String currentDate;
 
   time_t epochTime = timeClient.getEpochTime();
-//  Serial.print("Epoch Time: ");
-//  Serial.println(epochTime);
+  //  Serial.print("Epoch Time: ");
+  //  Serial.println(epochTime);
 
   String formattedTime = timeClient.getFormattedTime();
-//  Serial.print("Formatted Time: ");
-//  Serial.println(formattedTime);
+  //  Serial.print("Formatted Time: ");
+  //  Serial.println(formattedTime);
 
   int currentHour = timeClient.getHours();
-//  Serial.print("Hour: ");
-//  Serial.println(currentHour);
+  //  Serial.print("Hour: ");
+  //  Serial.println(currentHour);
 
 
   int currentMinute = timeClient.getMinutes();
-//  Serial.print("Minutes: ");
-//  Serial.println(currentMinute);
+  //  Serial.print("Minutes: ");
+  //  Serial.println(currentMinute);
 
   int currentSecond = timeClient.getSeconds();
-//  Serial.print("Seconds: ");
-//  Serial.println(currentSecond);
+  //  Serial.print("Seconds: ");
+  //  Serial.println(currentSecond);
 
   String weekDay = weekDays[timeClient.getDay()];
-//  Serial.print("Week Day: ");
-//  Serial.println(weekDay);
+  //  Serial.print("Week Day: ");
+  //  Serial.println(weekDay);
 
   //Get a time structure
   struct tm *ptm = gmtime ((time_t *)&epochTime);
 
   int monthDay = ptm->tm_mday;
-//  Serial.print("Month day: ");
-//  Serial.println(monthDay);
+  //  Serial.print("Month day: ");
+  //  Serial.println(monthDay);
 
   int currentMonth = ptm->tm_mon + 1;
-//  Serial.print("Month: ");
-//  Serial.println(currentMonth);
+  //  Serial.print("Month: ");
+  //  Serial.println(currentMonth);
 
   String currentMonthName = months[currentMonth - 1];
-//  Serial.print("Month name: ");
-//  Serial.println(currentMonthName);
+  //  Serial.print("Month name: ");
+  //  Serial.println(currentMonthName);
 
   int currentYear = ptm->tm_year + 1900;
-//  Serial.print("Year: ");
-//  Serial.println(currentYear);
+  //  Serial.print("Year: ");
+  //  Serial.println(currentYear);
 
   //Print complete date:
-  String currentDate = "Awake at: " + String(currentYear) + "-" + String(currentMonth) + "-" + String(monthDay) + "--" + formattedTime;
-//  Serial.print("Current date: ");
-//  Serial.println(currentDate);
-//
-//  Serial.println("");
+  int inputState = digitalRead(INPUT_PIN);
+  if (inputState == 0) {
+    currentDate = "Power down at: " + String(currentYear) + "-" + String(currentMonth) + "-" + String(monthDay) + "--" + formattedTime;
+  }
+  else {
+    currentDate = "Power up at: " + String(currentYear) + "-" + String(currentMonth) + "-" + String(monthDay) + "--" + formattedTime;
+  }
+
+  //  String currentDate = "Awake at: " + String(currentYear) + "-" + String(currentMonth) + "-" + String(monthDay) + "--" + formattedTime;
+  Serial.println(currentDate);
+  Serial.println("");
 
   if (currentHour == timeToSend && oldtime == 0) {
     oldtime = 1;
@@ -240,7 +247,7 @@ void loop() {
   if (currentHour == timeToSend + 1 && oldtime == 1) {
     oldtime = 0;
   }
-  int inputState = digitalRead(INPUT_PIN);
+
   if (inputState != oldInputState) {
     if (inputState == 0) {
       sendmail("ALERTE POWER DOWN", "high");
