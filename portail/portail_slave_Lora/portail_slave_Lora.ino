@@ -1,4 +1,4 @@
-// 14 jan 2024 Portail Slave with Lora
+// 24 jan 2024 Portail Slave with Lora
 #include <LoRa.h>
 
 const boolean debug = true;
@@ -28,7 +28,9 @@ const unsigned long delaybetweencount = 400;  // delay before 2 rot action
 const uint8_t minmotor = 150;  // value when approaching end of run
 
 // var util
-
+volatile boolean countFlag = false;
+volatile boolean intFlag = false;
+String finalString = "";
 
 uint8_t stateportail = 0;  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 uint8_t calibre;
@@ -45,15 +47,13 @@ double Voltage = 0;
 int mVperAmp;
 int ACSoffset;
 
-unsigned long trigROT;    // delay between 2 triggers
 unsigned long trigCOUNT;  // delay between rotation
-unsigned long curTime;    // current time
 unsigned long startROT;   // start of rotation
-const String stringCAo = String("ouvreP");
-const String stringCAf = String("fermeP");
+const String stringCAo = String("ouvreCo");
+const String stringCAf = String("fermeCo");
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println(F("***** portail gauche*****slave****"));
   Serial.println(F("with interrupt portail_slave_Lora"));
 
@@ -100,13 +100,11 @@ void setup() {
   measold = 0;
 
   delay(1000);
-
-  trigROT = millis();
   trigCOUNT = millis();
 }
 void onReceive(int packetSize) {
   String inString = "";  // string to hold input
-  String finalString = "";
+
   for (int i = 0; i < packetSize; i++) {
     char incoming = (char)LoRa.read();
     inString += (char)incoming;
@@ -116,36 +114,29 @@ void onReceive(int packetSize) {
     Serial.print("Received packet: '");
     Serial.println(finalString);
   }
+  intFlag = true;
+}
+void trigAction() {
   if ((finalString == stringCAo) || (finalString == stringCAf)) {
-    unsigned long interrupt_time = millis();
-    if (interrupt_time - trigROT > delaybetweentrig) {
+    if (finalString == stringCAo) {
+      stateportail = 1;
       if (debug) {
-        Serial.println(F(" trigger action pressed!.. OK!"));
+        Serial.println(F(" ouvre!.. "));
       }
-      trigROT = millis();
-      triggeraction();
-
-      if (finalString == stringCAo) {
-        stateportail = 1;
-        if (debug) {
-          Serial.println(F(" ouvre!.. "));
-        }
-      }
-      if (finalString == stringCAf) {
-        stateportail = 3;
-        if (debug) {
-          Serial.println(F(" ferme!.. "));
-        }
-      }
-      actionportail();
     }
-  } else {
-    if (debug) {
-      Serial.println(F(" trigger action pressed!.. NOT OK!"));
+    if (finalString == stringCAf) {
+      stateportail = 3;
+      if (debug) {
+        Serial.println(F(" ferme!.. "));
+      }
     }
+    actionportail();
   }
 }
 
+void counteractionISR(void) {
+  countFlag = true;
+}
 
 void pressedcountrot(void)  // each time there is a counter increase
 {
@@ -262,15 +253,11 @@ void actionportail() {  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 }
 
 
-
+/*
 
 void counteractionISR(void) {
   unsigned long interrupt_time = millis();
-  /*
- counterFlag = true;
-  if (counterFlag) {
-    counterFlag = false;
-    */
+ 
   if (debug) {
     Serial.println(F("counter pressed!"));
   }
@@ -291,7 +278,7 @@ void counteractionISR(void) {
   //counterFlag = false;
 }
 
-
+*/
 void triggeraction(void) {  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
   // run each time action button is pressed
   digitalWrite(LED_BUILTIN, LOW);
@@ -451,13 +438,31 @@ void loop1() {
 }
 
 void loop() {
-  curTime = millis();
+  //unsigned long curTime = millis();  // current time
+  if (intFlag) {
+    trigAction();
+    finalString = "";
+    intFlag = false;
+  }
+  //curTime = millis();
+  if (countFlag) {
+    if (inrotation && (millis() - trigCOUNT) > delaybetweencount) {
+      trigCOUNT = millis();
+      if (debug) {
+        Serial.println(F("counter pressed!"));
+      }
+      pressedcountrot();
+    }
+    countFlag = false;
+  }
+  //curTime = millis();
   if (inrotation) {
-    if (curTime - startROT > delayCurrentDrive) {  // measure after 0.5 sec
+    if (millis() - startROT > delayCurrentDrive) {  // measure after 0.5 sec
       //Serial.println("start measure");
       anaread();
     }
-    if (curTime - startROT > rotStop) {  //stop after rotstop
+    //curTime = millis();
+    if (millis() - startROT > rotStop) {  //stop after rotstop
       inrotation = false;
       if (calibre == 2) {
         if (debug) {
