@@ -1,14 +1,14 @@
-// 06 jan 2024 Portail Master with Lora
+// 24 jan 2024 Portail Master with Lora
 #include <LoRa.h>
 #include "DHT.h"
-#include <Bounce2.h>
+//#include <Bounce2.h>
 
-const boolean debug = true;
+const boolean debug = false;
 const boolean noRadio = false;
 const boolean noDTH = true;
 // pins
-const byte countrot_pin = PD2;  // counter of rotation pull up
-const byte trig_pin = PD3;      // trigger action pull up
+const byte countrot_pin = PD3;  // counter of rotation pull up
+const byte trig_pin = PD2;      // trigger action pull up
 const uint8_t EMA = PD5;        // pwm motor
 const uint8_t IN1 = PD6;        // command motor 1
 const uint8_t IN2 = PD7;        // command motor 2
@@ -21,7 +21,7 @@ const uint8_t sensor = A7;     // overloadsensor overload if sensor < ref sensor
 
 #define DHTTYPE DHT22  // DHT 22  (AM2302)
 
-Bounce POC = Bounce();
+//Bounce POC = Bounce();
 
 // var config
 // for right portail master , seen from inside court
@@ -33,15 +33,14 @@ const unsigned long opendelay = 1000;         // 1 second afte command to open
 const unsigned long closedelay = 0;           // 0 second after command to close
 const unsigned long delayCurrentDrive = 100;  // delay before read motor current in ms
 const unsigned long delaybetweentrig = 2000;  // delay before 2 trigger action
-const unsigned long delaybetweencount = 400;  // delay before 2 rot action
+const unsigned long delaybetweencount = 50;   // delay before 2 rot action
 
 const uint8_t minmotor = 150;  // value when approaching end of run
 
 // var util
 
+volatile boolean countFlag = false;
 volatile boolean triggerFlag = false;
-volatile boolean counterFlag = false;
-
 boolean messageFlag = false;  // 0 pas de message, 1 ouvre, 2 repos ouvert, 3 ferme , repos ferme, 5 ouvre puis ferme, 6 ferme puis ouvre, 7 overdrive, 8 overtime
 uint8_t stateportail = 0;     // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 uint8_t calibre;
@@ -60,15 +59,16 @@ int ACSoffset;
 
 const char *msg = "ouvreP";
 
-unsigned long trigROT;       // delay between 2 triggers
-unsigned long trigCOUNT;     // delay between rotation
-unsigned long curTime;       // current time
+unsigned long trigROT;    // delay between 2 triggers
+unsigned long trigCOUNT;  // delay between rotation
+
 unsigned long startROT;      // start of rotation
 unsigned long startMessage;  // start of message
-const String stringCAo = String("ouvreP");
-const String stringCAf = String("fermeP");
-const String stringPCo = String("Pouvert");
-const String stringPCf = String("Pferme");
+const String stringCAo = String("ouvreCo");
+const String stringCAf = String("fermeCo");
+
+const String stringPCo = String("ouvreP"); // portail ouvert
+const String stringPCf = String("fermeP");// portail ferme
 
 const String message0 = String("stpAf20sRO");
 const String message1 = String("stpAf20sRF");
@@ -84,7 +84,7 @@ const String message9 = String("CrotStpRF: ");
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println(F("***** portail droit*****Master****"));
   Serial.println(F("with interrupt portail_master_Lora"));
 
@@ -92,15 +92,21 @@ void setup() {
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+
   pinMode(countrot_pin, INPUT_PULLUP);
   pinMode(trig_pin, INPUT_PULLUP);
-
-  attachInterrupt(digitalPinToInterrupt(countrot_pin), counteractionISR, RISING);
+  pinMode(POC_pin, INPUT_PULLUP);
+  /*
+  POC.attach(countrot_pin, INPUT_PULLUP);
+  POC.attach(trig_pin, INPUT_PULLUP);
+  POC.interval(5);  // debounce interval in ms
+  POC.setPressedState(LOW);
+*/
+  attachInterrupt(digitalPinToInterrupt(countrot_pin), counteractionISR, FALLING);
   attachInterrupt(digitalPinToInterrupt(trig_pin), triggeractionISR, FALLING);
 
-  POC.attach(POC_pin, INPUT_PULLUP);
-  POC.interval(10);  // debounce interval in ms
-                     // POC.setPressedState(Low);
+
+  // POC.setPressedState(Low);
   digitalWrite(IN1, 0);
   digitalWrite(IN2, 0);
   analogWrite(EMA, 0);
@@ -126,6 +132,21 @@ void setup() {
   Serial.println(closedelay);
   Serial.println(F("init ferme!"));
 
+  measref = analogRead(refsensor);
+  VoltageRef = (measref / 1024.0) * 5000;  // Gets you mV
+  meas0 = analogRead(sensor);              // Converts and read the analog input value (value from 0.0 to 1.0)
+  delay(1);                                // 5 ms
+  meas1 = analogRead(sensor);              // Converts and read the analog input value (value from 0.0 to 1.0)
+  delay(1);                                // 5 ms
+  meas2 = analogRead(sensor);              // Converts and read the analog input value (value from 0.0 to 1.0)
+  meas = (meas0 + meas1 + meas2) / 3;
+  Voltage = (meas / 1024.0) * 5000;  // Gets you mV
+
+  Serial.print("sensor mV = ");  // shows the voltage measured
+  Serial.println(Voltage);
+  Serial.print("Ref mV = ");  // shows the voltage measured
+  Serial.println(VoltageRef);
+
 
   stateportail = 0;
   countrotation = 0;
@@ -136,12 +157,11 @@ void setup() {
   calibre = 1;
   inrotation = false;
   measold = 0;
-  triggerFlag = false;
-  counterFlag = false;
   delay(1000);
   trigROT = millis();
   startMessage = millis();
   trigCOUNT = millis();
+  sendStatus("init ferme");
 }
 
 void pressedcountrot(void)  // each time there is a counter increase
@@ -155,7 +175,7 @@ void pressedcountrot(void)  // each time there is a counter increase
       }
       stateportail = 0;
       actionportail();
-      sendStatus(message9 + String(countrotation));
+      sendStatus(message9 + String(countrotation) + " on: " + String(maxrotationclose));
     }
     if (countrotation == minmotorpos) {
       if (debug) {
@@ -173,7 +193,7 @@ void pressedcountrot(void)  // each time there is a counter increase
       }
       stateportail = 2;
       actionportail();
-      sendStatus(message8 + String(countrotation));
+      sendStatus(message8 + String(countrotation) + " on: " + String(maxrotationopen));
     }
     if (countrotation == maxmotorpos) {
       if (debug) {
@@ -189,6 +209,7 @@ void pressedcountrot(void)  // each time there is a counter increase
     Serial.print(F("rotation count"));
     Serial.println(countrotation);
   }
+  sendStatus("in rot: "+String(countrotation));
 }
 
 void ouvreportail() {
@@ -265,7 +286,7 @@ void sendmessage(String instr) {
     LoRa.print(instr);
     LoRa.endPacket();
     if (debug) {
-      Serial.print(F("send message 433mhz: "));
+      Serial.print(F("send message lora: "));
       Serial.println(instr);
     }
   }
@@ -286,61 +307,14 @@ String alignT(float t, String C) {
   return strt;
 }
 
-void triggeractionISR(void) {
-  //static unsigned long last_interrupt_time = 0;
-  unsigned long interrupt_time = millis();
-
-  //triggerFlag = true;
-  // change mode by pressing remote controller
-  /*
-  if (triggerFlag) {
-    triggerFlag = false;
-    */
-  if (debug) {
-    Serial.print(F(" trigger action pressed!.. "));
-  }
-
-  if (interrupt_time - trigROT > delaybetweentrig) {
-    if (debug) {
-      Serial.println(F("OK!"));
-    }
-    trigROT = millis();
-    triggeraction();
-  } else {
-    if (debug) {
-      Serial.println(F("NOT OK delay trigger"));
-    }
-  }
-  //triggerFlag = false;
-}
-
 
 void counteractionISR(void) {
-  unsigned long interrupt_time = millis();
-  /*
- counterFlag = true;
-  if (counterFlag) {
-    counterFlag = false;
-    */
-  if (debug) {
-    Serial.println(F("counter pressed!"));
-  }
-  if (interrupt_time - trigCOUNT > delaybetweencount) {
-    if (inrotation) {
-      trigCOUNT = millis();
-      pressedcountrot();
-    } else {
-      if (debug) {
-        Serial.println(F("not in rotation"));
-      }
-    }
-  } else {
-    if (debug) {
-      Serial.println(F("NOT OK delay counter"));
-    }
-  }
-  //counterFlag = false;
+  countFlag = true;
 }
+void triggeractionISR(void) {
+  triggerFlag = true;
+}
+
 
 
 void triggeraction(void) {  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
@@ -432,7 +406,7 @@ void anaread()
           Serial.print(F("countrotation : "));
           Serial.println(countrotation);
         }
-        sendStatus(message4 + String(countrotation));
+        sendStatus(message4 + String(countrotation) + " on: " + String(maxrotationclose));
         stateportail = 2;
         countrotation = maxrotationclose - countrotation;
         reposportail();
@@ -443,7 +417,7 @@ void anaread()
           Serial.print(F("countrotation : "));
           Serial.println(countrotation);
         }
-        sendStatus(message5 + String(countrotation));
+        sendStatus(message5 + String(countrotation) + " on: " + String(maxrotationclose));
         stateportail = 0;
         countrotation = maxrotationclose - countrotation;
         reposportail();
@@ -454,24 +428,24 @@ void anaread()
       minmotorpos = int(0.9 * maxrotationclose);
       maxmotorpos = int(0.9 * maxrotationopen);
       stateportail = 0;
+      sendStatus(message3 + String(countrotation) + " on: " + String(maxrotationclose));
       actionportail();
       calibre = 0;
       if (debug) {
         Serial.print(F("calibration maxrotationoclose: "));
         Serial.println(maxrotationclose);
       }
-      sendStatus(message3 + String(maxrotationclose));
     } else if (calibre == 1) {
       maxrotationopen = countrotation;
       maxmotorpos = int(0.9 * maxrotationopen);
       stateportail = 2;
+      sendStatus(message2 + String(maxrotationopen));
       actionportail();
       calibre = 2;
       if (debug) {
         Serial.print(F("calibration maxrotationopen: "));
         Serial.println(maxrotationopen);
       }
-      sendStatus(message2 + String(maxrotationopen));
     }
   }
   //}
@@ -514,25 +488,58 @@ void loop1() {
 }
 
 void loop() {
-  POC.update();
+
   float humid = 52;
   float tempera = 25;
-  curTime = millis();
+  //unsigned long curTime = millis();  // current time
+
+  if (triggerFlag) {
+    if (millis() - trigROT > delaybetweentrig) {
+      if (debug) {
+        Serial.println(F("Trigger action OK!"));
+      }
+      triggeraction();
+      trigROT = millis();
+    } else {
+      if (debug) {
+        Serial.println(F("NOT OK delay trigger"));
+      }
+    }
+    triggerFlag = false;
+  }
+  //curTime = millis();
+  if (countFlag) {
+    /*
+    if (debug) {
+      Serial.println(F("counter pressed!"));
+    }*/
+    //curTime = millis();
+    if (inrotation && (millis() - trigCOUNT) > delaybetweencount) {
+      trigCOUNT = millis();
+      if (debug) {
+        Serial.println(F("counter pressed OK!"));
+      }
+      pressedcountrot();
+    }
+    countFlag = false;
+  }
+  //curTime = millis();
   if (inrotation) {
-    if (curTime - startROT > delayCurrentDrive) {  // measure after 0.5 sec
+    if (millis() - startROT > delayCurrentDrive) {  // measure after 0.5 sec
       //Serial.println("start measure");
       anaread();
     }
-    if (curTime - startROT > rotStop) {  //stop after rotstop
+    //curTime = millis();
+    if (millis() - startROT > rotStop) {  //stop after rotstop
       inrotation = false;
       if (calibre == 0) {
 
         if (stateportail == 1) {
-          sendStatus(message0 + String(countrotation));
+          sendStatus(message0 + String(countrotation) + " on: " + String(maxrotationopen));
           stateportail = 2;
         }
         if (stateportail == 3) {
-          sendStatus(message1 + String(countrotation));
+          sendStatus(message1 + String(countrotation) + " on: " + String(maxrotationopen));
           stateportail = 0;
         }
         actionportail();
@@ -543,7 +550,7 @@ void loop() {
           Serial.print(F("countrotation : "));
           Serial.println(countrotation);
         }
-        sendStatus(message7 + String(countrotation));
+        sendStatus(message7 + String(countrotation) + " on: " + String(maxrotationopen));
         maxrotationclose = max(countrotation, maxrotationopen);
         maxrotationopen = maxrotationclose;
         minmotorpos = int(0.9 * maxrotationclose);
@@ -579,7 +586,8 @@ void loop() {
       startMessage = millis();
     }
   } else {
-    if (curTime - startMessage > messageDelay) {
+    //curTime = millis();
+    if (millis() - startMessage > messageDelay) {
       if (!noDTH) {
         float humid = dht.readHumidity();
         //float humid = 10.;
@@ -604,7 +612,7 @@ void loop() {
         strtemp = alignT(humid, "H");
         sendmessage(strtemp);
       }
-      if (!POC.read()) {
+      if (!digitalRead(POC_pin)) {
         sendmessage(stringPCf);
       } else {
         sendmessage(stringPCo);
