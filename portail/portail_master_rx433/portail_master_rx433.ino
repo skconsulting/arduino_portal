@@ -29,9 +29,8 @@ const uint8_t sensor = A7;     // overloadsensor overload if sensor < ref sensor
 // var config
 // for right portail master , seen from inside court
 
-const unsigned long messageDelay = 60000;     // message delay  after 60 seconds
+const unsigned long messageDelay = 30000;     // message info delay  after 30 seconds
 const unsigned long rotStop = 20000;          // stop rotation after 20 seconds
-const unsigned long sendPOC = 30000;          //send info portail every 30 seconds
 const unsigned long opendelay = 1000;         // 1 second afte command to open
 const unsigned long closedelay = 0;           // 0 second after command to close
 const unsigned long delayCurrentDrive = 100;  // delay before read motor current in ms
@@ -45,7 +44,7 @@ const uint8_t minmotor = 150;  // value when approaching end of run
 volatile boolean countFlag = false;
 volatile boolean triggerFlag = false;
 //boolean messageFlag = false;  // 0 pas de message, 1 ouvre, 2 repos ouvert, 3 ferme , repos ferme, 5 ouvre puis ferme, 6 ferme puis ouvre, 7 overdrive, 8 overtime
-uint8_t stateportail = 0;     // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
+uint8_t stateportail = 0;  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 uint8_t calibre;
 int maxrotationopen, maxrotationclose;
 int minmotorpos, maxmotorpos;
@@ -62,27 +61,27 @@ int ACSoffset;
 
 const char *msg = "ouvreP";
 
-unsigned long trigROT;    // delay between 2 triggers
-unsigned long trigCOUNT;  // delay between rotation
-
+unsigned long trigROT;       // delay between 2 triggers
+unsigned long trigCOUNT;     // delay between rotation
 unsigned long startROT;      // start of rotation
 unsigned long startMessage;  // start of message
+
 const String stringCAo = String("ouvreCo");
 const String stringCAf = String("fermeCo");
 
 const String stringPCo = String("ouvreP");  // portail ouvert
 const String stringPCf = String("fermeP");  // portail ferme
 
-const String message0 = String("STIRO"); // stop after 20 se run mode ouvre
-const String message1 = String("STIRF");// stop after 20 se run mode ferme
-const String message2 = String("SODCO: "); // stop after overdrivese calibre mode ouvre
-const String message3 = String("SODCF: ");// stop after overdrivese calibre mode ferme
-const String message4 = String("SODRO: ");// stop after overdrivese run mode ouvre
-const String message5 = String("SODRF: ");// stop after overdrivese run mode ferme
-const String message6 = String("STICO: ");// stop after 20S  calibre mode ouvre
-const String message7 = String("STICF: ");// stop after 20S  calibre mode ferme
-const String message8 = String("MACRO: ");// max counter reach run mode ouvre
-const String message9 = String("MACRF: "); // max counter reached run mode ferme
+const String message0 = String("STIRO");    // stop after 20 se run mode ouvre
+const String message1 = String("STIRF");    // stop after 20 se run mode ferme
+const String message2 = String("SODCO: ");  // stop after overdrivese calibre mode ouvre
+const String message3 = String("SODCF: ");  // stop after overdrivese calibre mode ferme
+const String message4 = String("SODRO: ");  // stop after overdrivese run mode ouvre
+const String message5 = String("SODRF: ");  // stop after overdrivese run mode ferme
+const String message6 = String("STICO: ");  // stop after 20S  calibre mode ouvre
+const String message7 = String("STICF: ");  // stop after 20S  calibre mode ferme
+const String message8 = String("MACRO: ");  // max counter reach run mode ouvre
+const String message9 = String("MACRF: ");  // max counter reached run mode ferme
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -157,10 +156,13 @@ void setup() {
   inrotation = false;
   measold = 0;
   delay(1000);
+
   trigROT = millis();
   startMessage = millis();
   trigCOUNT = millis();
-  sendStatus("init ferme");
+  startROT = millis();
+  
+  sendStatus("init ferme", 5);
 }
 
 void pressedcountrot(void)  // each time there is a counter increase
@@ -174,7 +176,7 @@ void pressedcountrot(void)  // each time there is a counter increase
       }
       stateportail = 0;
       actionportail();
-      sendStatus(message9 + String(countrotation) + " on: " + String(maxrotationclose));
+      sendStatus(message9 + String(countrotation) + " on: " + String(maxrotationclose), 2);
     }
     if (countrotation == minmotorpos) {
       if (debug) {
@@ -192,7 +194,7 @@ void pressedcountrot(void)  // each time there is a counter increase
       }
       stateportail = 2;
       actionportail();
-      sendStatus(message8 + String(countrotation) + " on: " + String(maxrotationopen));
+      sendStatus(message8 + String(countrotation) + " on: " + String(maxrotationopen), 2);
     }
     if (countrotation == maxmotorpos) {
       if (debug) {
@@ -208,7 +210,7 @@ void pressedcountrot(void)  // each time there is a counter increase
     Serial.print(F("rotation count"));
     Serial.println(String(countrotation));
   }
-  sendStatus("in rot: " + String(countrotation));
+  //sendStatus("in rot: " + String(countrotation));
 }
 
 void ouvreportail() {
@@ -279,7 +281,7 @@ void actionportail() {  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
       }
   }
 }
-
+/*
 void sendmessage(String instr) {
   if (!noRadio) {
     //String newins = "";
@@ -294,6 +296,7 @@ void sendmessage(String instr) {
       Serial.println(newins + String(newins.length()));
     }
     */
+/*
     int n = instr.length();
     char msg[n + 1];
     strcpy(msg, instr.c_str());
@@ -309,6 +312,7 @@ void sendmessage(String instr) {
     driver.waitPacketSent();
   }
 }
+*/
 String alignT(float t, String C) {
   String strt;
   strt = String(t, 1);
@@ -344,25 +348,25 @@ void triggeraction(void) {  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
     case 0:
       {
         stateportail = 1;
-        sendStatus(stringCAo);
+        sendStatus(stringCAo, 3);
         break;
       }
     case 1:
       {
         stateportail = 3;
-        sendStatus(stringCAf);
+        sendStatus(stringCAf, 3);
         break;
       }
     case 2:
       {
         stateportail = 3;
-        sendStatus(stringCAf);
+        sendStatus(stringCAf, 3);
         break;
       }
     case 3:
       {
         stateportail = 1;
-        sendStatus(stringCAo);
+        sendStatus(stringCAo, 3);
         break;
       }
   }
@@ -383,10 +387,44 @@ String padStringTo16(String ins) {
   return str;
 }
 */
-void sendStatus(String ins) {
-  sendmessage(ins);
-  startMessage = millis();
-  //messageFlag = true;
+void sendStatus(String instr, uint8_t numb) {
+  if (!noRadio) {
+    //String newins = "";
+    //if (debug) {
+    //  Serial.print(F("send message: "));
+    //  Serial.println(instr + String(instr.length()));
+    //}
+    /*
+    newins = padStringTo16(instr);
+    if (debug) {
+      Serial.print(F("new string "));
+      Serial.println(newins + String(newins.length()));
+    }
+    */
+    int n = instr.length();
+    char msg[n + 1];
+    strcpy(msg, instr.c_str());
+    if (debug) {
+      Serial.print(F("send message 433mhz: "));
+      Serial.println(String(msg) + " " + strlen(msg));
+    }
+    for (int i = 0; i < numb; i++) {
+      driver.send((uint8_t *)msg, strlen(msg));
+      driver.waitPacketSent();
+      /*
+      if (debug) {
+        Serial.println("send number " + String(i) + "on: " + String(numb));
+      }
+      
+    driver.send((uint8_t *)msg, strlen(msg));
+    driver.waitPacketSent();
+    driver.send((uint8_t *)msg, strlen(msg));
+    driver.waitPacketSent();
+    */
+    }
+    startMessage = millis();
+    //messageFlag = true;
+  }
 }
 
 void anaread()
@@ -433,7 +471,7 @@ void anaread()
           Serial.print(F("countrotation : "));
           Serial.println(countrotation);
         }
-        sendStatus(message4 + String(countrotation) + " on: " + String(maxrotationclose));
+        sendStatus(message4 + String(countrotation) + " on: " + String(maxrotationclose), 3);
         stateportail = 2;
         countrotation = maxrotationclose - countrotation;
         reposportail();
@@ -444,7 +482,7 @@ void anaread()
           Serial.print(F("countrotation : "));
           Serial.println(countrotation);
         }
-        sendStatus(message5 + String(countrotation) + " on: " + String(maxrotationclose));
+        sendStatus(message5 + String(countrotation) + " on: " + String(maxrotationclose), 3);
         stateportail = 0;
         countrotation = maxrotationclose - countrotation;
         reposportail();
@@ -455,7 +493,7 @@ void anaread()
       minmotorpos = int(0.9 * maxrotationclose);
       maxmotorpos = int(0.9 * maxrotationopen);
       stateportail = 0;
-      sendStatus(message3 + String(countrotation) + " on: " + String(maxrotationclose));
+      sendStatus(message3 + String(countrotation) + " on: " + String(maxrotationclose), 3);
       actionportail();
       calibre = 0;
       if (debug) {
@@ -466,7 +504,7 @@ void anaread()
       maxrotationopen = countrotation;
       maxmotorpos = int(0.9 * maxrotationopen);
       stateportail = 2;
-      sendStatus(message2 + String(maxrotationopen));
+      sendStatus(message2 + String(maxrotationopen), 3);
       actionportail();
       calibre = 2;
       if (debug) {
@@ -480,10 +518,10 @@ void anaread()
 
 //
 void loop1() {
-  sendStatus("1234567890123");
+  sendStatus("1234567890123", 3);
   Serial.println("send1");
   delay(100);
-  sendStatus("1234567890123");
+  sendStatus("1234567890123", 3);
   Serial.println("send2");
   delay(100);
 }
@@ -573,11 +611,11 @@ void loop() {
       if (calibre == 0) {
 
         if (stateportail == 1) {
-          sendStatus(message0 + String(countrotation) + " on: " + String(maxrotationopen));
+          sendStatus(message0 + String(countrotation) + " on: " + String(maxrotationopen), 3);
           stateportail = 2;
         }
         if (stateportail == 3) {
-          sendStatus(message1 + String(countrotation) + " on: " + String(maxrotationopen));
+          sendStatus(message1 + String(countrotation) + " on: " + String(maxrotationopen), 3);
           stateportail = 0;
         }
         actionportail();
@@ -588,7 +626,7 @@ void loop() {
           Serial.print(F("countrotation : "));
           Serial.println(countrotation);
         }
-        sendStatus(message7 + String(countrotation) + " on: " + String(maxrotationopen));
+        sendStatus(message7 + String(countrotation) + " on: " + String(maxrotationopen), 3);
         maxrotationclose = max(countrotation, maxrotationopen);
         maxrotationopen = maxrotationclose;
         minmotorpos = int(0.9 * maxrotationclose);
@@ -609,7 +647,7 @@ void loop() {
           Serial.println(countrotation);
         }
         maxrotationopen = countrotation;
-        sendStatus(message6 + String(countrotation));
+        sendStatus(message6 + String(countrotation), 3);
         maxmotorpos = int(0.9 * maxrotationopen);
         stateportail = 2;
         actionportail();
@@ -646,14 +684,14 @@ void loop() {
           Serial.println(" *C ");
         }
         String strtemp = alignT(tempera, "T");
-        sendStatus(strtemp);
+        sendStatus(strtemp, 10);
         strtemp = alignT(humid, "H");
-        sendStatus(strtemp);
+        sendStatus(strtemp, 10);
       }
       if (!digitalRead(POC_pin)) {
-        sendStatus(stringPCf);
+        sendStatus(stringPCf, 10);
       } else {
-        sendStatus(stringPCo);
+        sendStatus(stringPCo, 10);
       }
       startMessage = millis();
     }
