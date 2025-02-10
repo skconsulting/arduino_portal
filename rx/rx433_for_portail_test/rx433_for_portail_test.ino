@@ -93,6 +93,7 @@ void loop() {
       Serial.write(buf[i]);
       res = res + char(buf[i]);
     }
+    
 
     //b = !b;
 
@@ -100,13 +101,14 @@ void loop() {
     if ((stringCAo == res) || (stringCAf == res)) {
       newins = padStringTo16(res);
       lcd.setCursor(0, 0);  // set the cursor to column 0, line 0
-      lcd.print(newins);
+      lcd.print(String(j)+": "+newins);
     } else {
       lcd.setCursor(0, 1);  // set the cursor to column 0, line 0
       newins = padStringTo16(res);
-      lcd.print(newins);
+      lcd.print(String(j)+": "+newins);
     }
-    Serial.println("Message recu: " + newins);
+    Serial.println("Message recu: " + res);
+    j++;
     /*
     String subt = myst.substring(0, 6);
     //    Serial.println(sub.substring(0, 1));
