@@ -1,4 +1,4 @@
-// 31 jan 2024 Portail Master with Lora
+// 7 mar 2025 Portail Master with rxtx433
 //#define RH_ASK_MAX_MESSAGE_LEN 80  //67
 #include <RH_ASK.h>
 #include "DHT.h"
@@ -10,8 +10,8 @@ const boolean debug = true;
 const boolean noRadio = false;
 const boolean noDTH = true;
 // pins
-const byte countrot_pin = PD3;  // counter of rotation pull up
-const byte trig_pin = PD2;      // trigger action pull up
+const byte countrot_pin = PD2;  // counter of rotation pull up
+const byte trig_pin = PD3;      // trigger action pull up
 const uint8_t EMA = PD5;        // pwm motor
 const uint8_t IN1 = PD6;        // command motor 1
 const uint8_t IN2 = PD7;        // command motor 2
@@ -161,7 +161,7 @@ void setup() {
   startMessage = millis();
   trigCOUNT = millis();
   startROT = millis();
-  
+
   sendStatus("init ferme", 5);
 }
 
@@ -565,9 +565,8 @@ void loop2() {
 
 void loop() {
 
-  float humid = 52;
-  float tempera = 25;
-  //unsigned long curTime = millis();  // current time
+  float humid = 1;
+  float tempera = 0;
 
   if (triggerFlag) {
     if (millis() - trigROT > delaybetweentrig) {
@@ -583,7 +582,7 @@ void loop() {
     }
     triggerFlag = false;
   }
-  //curTime = millis();
+
   if (countFlag) {
     /*
     if (debug) {
@@ -599,7 +598,7 @@ void loop() {
     }
     countFlag = false;
   }
-  //curTime = millis();
+
   if (inrotation) {
     if (millis() - startROT > delayCurrentDrive) {  // measure after 0.5 sec
       //Serial.println("start measure");
@@ -665,10 +664,18 @@ void loop() {
     //curTime = millis();
     if (millis() - startMessage > messageDelay) {
       if (!noDTH) {
-        float humid = dht.readHumidity();
+        if (debug) {
+          Serial.println("read DTH");
+        }
+        humid = dht.readHumidity();
         //float humid = 10.;
-        //    // Read temperature as Celsius
-        float tempera = dht.readTemperature();
+        tempera = dht.readTemperature();  //Read temperature as Celsius
+      } else {
+        if (debug) {
+          Serial.println("read DTH dummy values");
+        }
+        float humid = 52.0;
+        float tempera = 90.0;
       }
       if (isnan(humid) || isnan(tempera)) {
         if (debug) {
