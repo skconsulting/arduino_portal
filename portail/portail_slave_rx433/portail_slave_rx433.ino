@@ -6,7 +6,7 @@
 const boolean debug = true;
 const boolean noRadio = false;
 // pins
-const byte countrot_pin = PD3;  // counter of rotation pull up
+const byte countrot_pin = PD2;  // counter of rotation pull up
 //const byte trig_pin = PD3;      // trigger action pull up
 const uint8_t EMA = PD5;  // pwm motor
 const uint8_t IN1 = PD6;  // command motor 1
