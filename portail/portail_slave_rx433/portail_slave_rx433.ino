@@ -1,4 +1,10 @@
-// 2094 fev 2025 Portail Slave with Lora
+//  08 9  2025 Portail Slave with RX433
+// trigger by master by radio
+// be careful with debug mode
+//const boolean debug = false;
+//const boolean noRadio = false;
+// no pot for voltageref
+
 #define RH_ASK_MAX_MESSAGE_LEN 24  //67
 
 #include <RH_ASK.h>  // (fait partie de Radiohead)
@@ -9,18 +15,18 @@ const boolean noRadio = false;
 const byte countrot_pin = PD2;  // counter of rotation pull up
 //const byte trig_pin = PD3;      // trigger action pull up
 const uint8_t EMA = PD5;  // pwm motor
-const uint8_t IN1 = PD6;  // command motor 1
-const uint8_t IN2 = PD7;  // command motor 2
-//D12 TX433mhz data
+const uint8_t IN1 = PD7;  // command motor 1
+const uint8_t IN2 = PD6;  // command motor 2
+//D11 TX433mhz data receive
 
-const uint8_t refsensor = A6;  // overloadsensor reference
+//const uint8_t refsensor = A6;  // overloadsensor reference
 const uint8_t sensor = A7;     // overloadsensor overload if sensor < ref sensor
 // var config
 // for right portail master , seen from inside court
 
 const unsigned long rotStop = 20000;          // stop rotation after 20 seconds
 const unsigned long opendelay = 0;            // 0 second afte command to open
-const unsigned long closedelay = 1000;        // 1 second after command to close
+const unsigned long closedelay = 2000;        // 2 second after command to close
 const unsigned long delayCurrentDrive = 100;  // delay before read motor current in ms
 const unsigned long delaybetweentrig = 1500;  // delay before 2 trigger action
 const unsigned long delaybetweencount = 50;   // delay before 2 rot action
@@ -35,12 +41,14 @@ uint8_t calibre;
 int maxrotationopen, maxrotationclose;
 int minmotorpos, maxmotorpos;
 bool inrotation = false;
-double VoltageRef = 3.3;  // ref Voltage from potentiometre
+
 int countrotation = 0;
 
 double meas, meas0, meas1, meas2, measold, measref;
 
 double Voltage = 0;
+double VoltageRef = 4800; // ref Voltage mv
+
 
 int mVperAmp;
 int ACSoffset;
@@ -321,8 +329,8 @@ void triggeraction(void) {  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 void anaread()
 //stateportail = 0; // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
 {
-  measref = analogRead(refsensor);
-  VoltageRef = (measref / 1024.0) * 5000;  // Gets you mV
+  //measref = analogRead(refsensor);
+  //VoltageRef = (measref / 1024.0) * 5000;  // Gets you mV
   meas0 = analogRead(sensor);              // Converts and read the analog input value (value from 0.0 to 1.0)
   // delay(1); // 1 ms
   meas1 = analogRead(sensor);  // Converts and read the analog input value (value from 0.0 to 1.0)
