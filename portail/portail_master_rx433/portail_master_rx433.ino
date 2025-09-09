@@ -1,4 +1,9 @@
-// 7 mar 2025 Portail Master with rxtx433
+// 26 aout 2025 Portail Master with rxtx433 (left from inside)
+// include clignotant
+// attention aux boolean de debug
+//const boolean debug = false
+//const boolean noRadio = false
+//const boolean noDTH = false
 //#define RH_ASK_MAX_MESSAGE_LEN 80  //67
 #include <RH_ASK.h>
 #include "DHT.h"
@@ -6,15 +11,17 @@
 RH_ASK driver;
 //int i = 0;
 
-const boolean debug = true;
+const boolean debug = 
+;
 const boolean noRadio = false;
-const boolean noDTH = true;
+const boolean noDTH = false;
 // pins
 const byte countrot_pin = PD2;  // counter of rotation pull up
 const byte trig_pin = PD3;      // trigger action pull up
 const uint8_t EMA = PD5;        // pwm motor
 const uint8_t IN1 = PD6;        // command motor 1
 const uint8_t IN2 = PD7;        // command motor 2
+const uint8_t Cclig = 9;        // command clignotant
 const uint8_t POC_pin = 8;      // detection portail ouvert/ferme on pin D8 PB0
 #define DHTPIN 4                // what pin we're connected to thermal sensor D10
 //D12 TX433mhz data
@@ -66,8 +73,8 @@ unsigned long trigCOUNT;     // delay between rotation
 unsigned long startROT;      // start of rotation
 unsigned long startMessage;  // start of message
 
-const String stringCAo = String("ouvreCo");
-const String stringCAf = String("fermeCo");
+const String stringCAo = String("ouvreCo"); // commande ouvre
+const String stringCAf = String("fermeCo"); // commande ferme
 
 const String stringPCo = String("ouvreP");  // portail ouvert
 const String stringPCf = String("fermeP");  // portail ferme
@@ -93,6 +100,7 @@ void setup() {
   pinMode(EMA, OUTPUT);
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
+  pinMode(Cclig, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(countrot_pin, INPUT_PULLUP);
@@ -111,6 +119,7 @@ void setup() {
   // POC.setPressedState(Low);
   digitalWrite(IN1, 0);
   digitalWrite(IN2, 0);
+  digitalWrite(Cclig, 0);
   analogWrite(EMA, 0);
 
   if (debug) {
@@ -222,6 +231,7 @@ void ouvreportail() {
   digitalWrite(IN2, 0);
   delay(2);
   analogWrite(EMA, 255);
+  digitalWrite(Cclig, 1);
 }
 void fermeportail() {
   inrotation = true;
@@ -232,6 +242,7 @@ void fermeportail() {
   digitalWrite(IN2, 1);
   delay(2);
   analogWrite(EMA, 255);
+  digitalWrite(Cclig, 1);
 }
 void reposportail() {
   startROT = millis();
@@ -239,6 +250,7 @@ void reposportail() {
   analogWrite(EMA, 0);
   digitalWrite(IN1, 0);
   digitalWrite(IN2, 0);
+  digitalWrite(Cclig, 0);
 }
 
 void actionportail() {  // 0 repos ferme, 1 ouvre, 2 repos ouvert, 3 ferme
